@@ -1,36 +1,55 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { TaskList } from '../../components/tasks/TaskList';
 import { Task } from '../../db/model/task';
-import { useTheme, useCurrentUser, useAppState } from '../../store/hooks';
+import { useTheme, useCurrentUser, useAppState, useAppDispatch, useDailyStreak } from '../../store/hooks';
 import { database } from '../../db';
+import { checkIfMidnightResetNeeded, triggerMidnightResetManually } from '../../tasks/midnightResetTask';
+import { updateDailyActivity, loadUserStreaks, performMidnightReset } from '../../store/slices/userActivitySlice';
 
 export default function DashboardScreen() {
   const router = useRouter();
   const { isDarkMode } = useTheme();
   const currentUser = useCurrentUser();
   const { isLoading: appLoading } = useAppState();
+  const dispatch = useAppDispatch();
+  const dailyStreak = useDailyStreak();
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Check for midnight reset when component mounts
+  useEffect(() => {
+    const checkMidnightReset = async () => {
+      if (!currentUser?.id) return;
+
+      try {
+        const needsReset = await checkIfMidnightResetNeeded(currentUser.id);
+        if (needsReset) {
+          console.log('Performing foreground midnight reset');
+          dispatch(performMidnightReset(currentUser.id));
+        }
+
+        // Load user activity data
+        dispatch(updateDailyActivity({ userId: currentUser.id }));
+        dispatch(loadUserStreaks(currentUser.id));
+      } catch (error) {
+        console.error('Error checking midnight reset:', error);
+      }
+    };
+
+    checkMidnightReset();
+  }, [currentUser?.id, dispatch]);
 
   const handleTaskPress = useCallback((task: Task) => {
     router.push(`/tasks/${task.id}/edit`);
   }, [router]);
 
   const handleTaskToggle = useCallback(async (task: Task) => {
-    try {
-      await database.write(async () => {
-        await task.update(record => {
-          record.status = task.status === 'completed' ? 'todo' : 'completed';
-          record.completedAt = task.status === 'completed' ? null : new Date();
-          record.updatedAt = new Date();
-        });
-      });
-    } catch (error) {
-      console.error('Error toggling task:', error);
-    }
+    // Task completion is now handled optimistically in TaskListItem
+    // This callback can be used for additional logic if needed
+    console.log('Task toggled:', task.id, task.status);
   }, []);
 
   const handleCreateTask = useCallback(() => {
@@ -103,11 +122,25 @@ export default function DashboardScreen() {
         <View style={styles.headerContent}>
           <View style={styles.headerText}>
             <Text style={greetingStyle}>
-              {getCurrentGreeting()}{currentUser?.name ? `, ${currentUser.name}` : ''}
+              {getCurrentGreeting()}{currentUser?.full_name ? `, ${currentUser.full_name}` : ''}
             </Text>
-            <Text style={dateStyle}>
-              {getTodayDate()}
-            </Text>
+            <View style={styles.dateRow}>
+              <Text style={dateStyle}>
+                {getTodayDate()}
+              </Text>
+              {dailyStreak > 0 && (
+                <View style={[styles.streakBadge, isDarkMode && styles.darkStreakBadge]}>
+                  <Ionicons
+                    name="flame"
+                    size={14}
+                    color="#FF6B35"
+                  />
+                  <Text style={[styles.streakText, isDarkMode && styles.darkStreakText]}>
+                    {dailyStreak}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
           
           <TouchableOpacity
@@ -201,6 +234,11 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
   },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   greeting: {
     fontSize: 24,
     fontWeight: '700',
@@ -246,5 +284,25 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     backgroundColor: 'transparent',
+  },
+  streakBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5F0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  darkStreakBadge: {
+    backgroundColor: '#2A2A2A',
+  },
+  streakText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FF6B35',
+  },
+  darkStreakText: {
+    color: '#FF6B35',
   },
 });

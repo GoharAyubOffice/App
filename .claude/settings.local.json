@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(mkdir:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npx tsc:*)",
+      "Bash(timeout 30s npm start:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

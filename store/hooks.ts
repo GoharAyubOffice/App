@@ -12,6 +12,19 @@ import {
   selectOnboardingPreferences,
   selectOnboardingProgress,
 } from './slices/onboardingSlice';
+import {
+  selectUserActivity,
+  selectTodaysActivity,
+  selectStreaks,
+  selectDailyStreak,
+  selectLongestStreak,
+  selectWeeklyProgress,
+  selectMonthlyProgress,
+  selectActivityLoading,
+  selectActivityError,
+  selectShowNewDayNotification,
+  selectMidnightResetInProgress,
+} from './slices/userActivitySlice';
 
 // Typed hooks for Redux
 export const useAppDispatch = () => useDispatch<AppDispatch>();
@@ -200,6 +213,51 @@ export const useSelectedGoals = () => {
 
 export const useOnboardingPreferences = () => {
   return useAppSelector(selectOnboardingPreferences);
+};
+
+// User Activity hooks
+export const useUserActivity = () => {
+  return useAppSelector(selectUserActivity);
+};
+
+export const useTodaysActivity = () => {
+  return useAppSelector(selectTodaysActivity);
+};
+
+export const useStreaks = () => {
+  return useAppSelector(selectStreaks);
+};
+
+export const useDailyStreak = () => {
+  return useAppSelector(selectDailyStreak);
+};
+
+export const useLongestStreak = () => {
+  return useAppSelector(selectLongestStreak);
+};
+
+export const useWeeklyProgress = () => {
+  return useAppSelector(selectWeeklyProgress);
+};
+
+export const useMonthlyProgress = () => {
+  return useAppSelector(selectMonthlyProgress);
+};
+
+export const useActivityLoading = () => {
+  return useAppSelector(selectActivityLoading);
+};
+
+export const useActivityError = () => {
+  return useAppSelector(selectActivityError);
+};
+
+export const useShowNewDayNotification = () => {
+  return useAppSelector(selectShowNewDayNotification);
+};
+
+export const useMidnightResetInProgress = () => {
+  return useAppSelector(selectMidnightResetInProgress);
 };
 
 // Combined hook for common app state

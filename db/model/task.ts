@@ -16,6 +16,7 @@ export class Task extends Model {
     attachments: { type: 'has_many', foreignKey: 'task_id' },
     time_entries: { type: 'has_many', foreignKey: 'task_id' },
     task_tags: { type: 'has_many', foreignKey: 'task_id' },
+    task_completions: { type: 'has_many', foreignKey: 'task_id' },
   };
 
   @field('server_id') serverId!: string;
@@ -26,8 +27,8 @@ export class Task extends Model {
   @field('project_id') projectId!: string;
   @field('assignee_id') assigneeId!: string;
   @field('created_by') createdBy!: string;
-  @date('due_date') dueDate!: Date;
-  @date('completed_at') completedAt!: Date;
+  @date('due_date') dueDate?: Date;
+  @date('completed_at') completedAt?: Date;
   @field('position') position!: number;
   @date('created_at') createdAt!: Date;
   @date('updated_at') updatedAt!: Date;
@@ -41,4 +42,5 @@ export class Task extends Model {
   @children('attachments') attachments!: any;
   @children('time_entries') timeEntries!: any;
   @children('task_tags') taskTags!: any;
+  @children('task_completions') taskCompletions!: any;
 }

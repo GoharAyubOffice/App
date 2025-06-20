@@ -7,6 +7,7 @@ import { FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist
 import authReducer from './slices/authSlice';
 import uiReducer from './slices/uiSlice';
 import onboardingReducer from './slices/onboardingSlice';
+import userActivityReducer from './slices/userActivitySlice';
 import { syncApi } from './api/syncApi';
 
 // Configure persistence
@@ -60,6 +61,7 @@ const rootReducer = combineReducers({
   auth: persistedAuthReducer,
   ui: persistedUIReducer,
   onboarding: persistedOnboardingReducer,
+  userActivity: userActivityReducer,
   [syncApi.reducerPath]: syncApi.reducer,
 });
 

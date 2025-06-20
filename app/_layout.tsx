@@ -11,7 +11,10 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { store, persistor } from '@/store';
-import { useTheme } from '@/store/hooks';
+import { useTheme, useCurrentUser } from '@/store/hooks';
+import { defineMidnightResetTask, registerMidnightResetTask, setUserIdForBackgroundTasks } from '@/tasks/midnightResetTask';
+import { defineStreakMonitorTask, registerStreakMonitorTask, setUserIdForStreakMonitor } from '@/tasks/streakMonitorTask';
+import { MidnightResetNotification } from '@/components/ui/MidnightResetNotification';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -41,6 +44,38 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
+  // Initialize background tasks
+  useEffect(() => {
+    const initializeBackgroundTasks = async () => {
+      try {
+        console.log('Initializing background tasks...');
+        
+        // Define the background tasks
+        defineMidnightResetTask();
+        defineStreakMonitorTask();
+        
+        // Register the background tasks
+        const midnightRegistered = await registerMidnightResetTask();
+        const streakRegistered = await registerStreakMonitorTask();
+        
+        if (midnightRegistered && streakRegistered) {
+          console.log('All background tasks initialized successfully');
+        } else {
+          console.warn('Some background tasks failed to register:', {
+            midnight: midnightRegistered,
+            streak: streakRegistered
+          });
+        }
+      } catch (error) {
+        console.error('Error initializing background tasks:', error);
+      }
+    };
+
+    if (loaded) {
+      initializeBackgroundTasks();
+    }
+  }, [loaded]);
+
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
@@ -68,9 +103,18 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const systemColorScheme = useColorScheme();
   const { isDarkMode } = useTheme();
+  const currentUser = useCurrentUser();
   
   // Use Redux theme state, fallback to system preference
   const effectiveTheme = isDarkMode !== null ? isDarkMode : systemColorScheme === 'dark';
+
+  // Set user ID for background tasks when user is available
+  useEffect(() => {
+    if (currentUser?.id) {
+      setUserIdForBackgroundTasks(currentUser.id);
+      setUserIdForStreakMonitor(currentUser.id);
+    }
+  }, [currentUser?.id]);
 
   return (
     <ThemeProvider value={effectiveTheme ? DarkTheme : DefaultTheme}>
@@ -78,6 +122,7 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
+      <MidnightResetNotification />
     </ThemeProvider>
   );
 }
