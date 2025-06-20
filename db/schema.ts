@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 4,
+  version: 5,
   tables: [
     tableSchema({
       name: 'profiles',
@@ -241,6 +241,23 @@ export const schema = appSchema({
         { name: 'used_protections', type: 'number' },
         { name: 'metadata', type: 'string', isOptional: true },
         { name: 'created_at', type: 'number' },
+        { name: 'synced_at', type: 'number', isOptional: true },
+        { name: 'is_dirty', type: 'boolean' },
+      ],
+    }),
+    tableSchema({
+      name: 'mood_entries',
+      columns: [
+        { name: 'server_id', type: 'string', isOptional: true },
+        { name: 'user_id', type: 'string' },
+        { name: 'mood_score', type: 'number' }, // 1-5 scale
+        { name: 'mood_label', type: 'string' }, // e.g. 'very_happy', 'sad', etc.
+        { name: 'notes', type: 'string', isOptional: true },
+        { name: 'logged_at', type: 'number' },
+        { name: 'activity_context', type: 'string', isOptional: true }, // e.g. 'after_task_completion'
+        { name: 'metadata', type: 'string', isOptional: true }, // JSON for additional data
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
         { name: 'synced_at', type: 'number', isOptional: true },
         { name: 'is_dirty', type: 'boolean' },
       ],

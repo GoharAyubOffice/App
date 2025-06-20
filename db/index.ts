@@ -19,6 +19,7 @@ import { TaskCompletion } from './model/taskCompletion';
 import { UserStreak } from './model/userStreak';
 import { DailyActivity } from './model/dailyActivity';
 import { StreakProtection } from './model/streakProtection';
+import { MoodEntry } from './model/moodEntry';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -49,7 +50,8 @@ export const database = new Database({
     UserStreak,
     DailyActivity,
     StreakProtection,
+    MoodEntry,
   ],
 });
 
-export { Profile, Workspace, Project, Task, Subtask, Comment, Tag, TaskTag, WorkspaceMember, Attachment, TimeEntry, ActivityLog, TaskCompletion, UserStreak, DailyActivity, StreakProtection };
+export { Profile, Workspace, Project, Task, Subtask, Comment, Tag, TaskTag, WorkspaceMember, Attachment, TimeEntry, ActivityLog, TaskCompletion, UserStreak, DailyActivity, StreakProtection, MoodEntry };

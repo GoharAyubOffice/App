@@ -1,0 +1,347 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2024-01-20",
+  "categories": [
+    {
+      "id": "getting_started",
+      "title": "Getting Started",
+      "description": "Learn the basics of the FlowState app",
+      "icon": "play-circle",
+      "color": "#007AFF"
+    },
+    {
+      "id": "productivity",
+      "title": "Productivity Tips",
+      "description": "Advanced techniques to boost your productivity",
+      "icon": "trending-up",
+      "color": "#4CAF50"
+    },
+    {
+      "id": "mood_tracking",
+      "title": "Mood & Wellness",
+      "description": "Understanding and improving your emotional well-being",
+      "icon": "happy",
+      "color": "#FF9500"
+    },
+    {
+      "id": "analytics",
+      "title": "Analytics & Insights",
+      "description": "Making sense of your data and patterns",
+      "icon": "analytics",
+      "color": "#9C27B0"
+    },
+    {
+      "id": "habits",
+      "title": "Building Habits",
+      "description": "Create lasting positive changes in your routine",
+      "icon": "flame",
+      "color": "#FF6B6B"
+    }
+  ],
+  "tutorials": [
+    {
+      "id": "welcome_to_flowstate",
+      "title": "Welcome to FlowState",
+      "description": "Get started with your personal productivity companion",
+      "category": "getting_started",
+      "difficulty": "beginner",
+      "estimatedTime": "5 min",
+      "tags": ["intro", "basics", "setup"],
+      "content": {
+        "introduction": "Welcome to FlowState! This tutorial will help you understand the core features and get you started on your productivity journey.",
+        "sections": [
+          {
+            "title": "What is FlowState?",
+            "content": "FlowState is a comprehensive productivity app that helps you manage tasks, track your mood, build habits, and gain insights into your productivity patterns. It's designed to adapt to your workflow and help you achieve optimal focus.",
+            "type": "text"
+          },
+          {
+            "title": "Key Features",
+            "content": "• Task Management with smart prioritization\n• Mood tracking and correlation analysis\n• Habit building with streak protection\n• Analytics dashboard with insights\n• Smart notifications that learn from your patterns",
+            "type": "list"
+          },
+          {
+            "title": "Getting Started",
+            "content": "1. Create your first task\n2. Log your mood for the day\n3. Set up a daily habit\n4. Explore the analytics dashboard\n5. Customize your notification preferences",
+            "type": "steps"
+          }
+        ],
+        "tips": [
+          "Start with just 2-3 tasks to avoid overwhelm",
+          "Log your mood consistently for better insights",
+          "Use the streak protection feature wisely"
+        ],
+        "nextSteps": [
+          "Create your first task",
+          "Complete the mood tracking tutorial"
+        ]
+      }
+    },
+    {
+      "id": "task_management_basics",
+      "title": "Task Management Essentials",
+      "description": "Master the art of organizing and prioritizing your tasks",
+      "category": "getting_started",
+      "difficulty": "beginner",
+      "estimatedTime": "8 min",
+      "tags": ["tasks", "organization", "priorities"],
+      "content": {
+        "introduction": "Effective task management is the foundation of productivity. Learn how to create, organize, and prioritize tasks in FlowState.",
+        "sections": [
+          {
+            "title": "Creating Tasks",
+            "content": "Tasks in FlowState are more than simple to-dos. Each task includes:\n• Title and description\n• Priority level (low, medium, high, urgent)\n• Due dates and time estimates\n• Project association\n• Status tracking",
+            "type": "text"
+          },
+          {
+            "title": "Priority Levels",
+            "content": "• Urgent: Must be done today\n• High: Important and time-sensitive\n• Medium: Regular daily tasks\n• Low: Nice to have, no immediate deadline",
+            "type": "list"
+          },
+          {
+            "title": "Best Practices",
+            "content": "1. Use descriptive titles\n2. Set realistic due dates\n3. Break large tasks into smaller subtasks\n4. Review and adjust priorities daily\n5. Use the completion rate analytics to improve",
+            "type": "steps"
+          }
+        ],
+        "tips": [
+          "Limit urgent tasks to 2-3 per day",
+          "Use the two-minute rule: if it takes less than 2 minutes, do it now",
+          "Review your task list every morning"
+        ],
+        "nextSteps": [
+          "Create 5 tasks with different priorities",
+          "Set up your first project"
+        ]
+      }
+    },
+    {
+      "id": "mood_tracking_guide",
+      "title": "Understanding Mood Tracking",
+      "description": "Learn how mood affects productivity and how to track it effectively",
+      "category": "mood_tracking",
+      "difficulty": "beginner",
+      "estimatedTime": "6 min",
+      "tags": ["mood", "wellness", "tracking"],
+      "content": {
+        "introduction": "Your emotional state significantly impacts your productivity. Learn how to track your mood and understand its correlation with your performance.",
+        "sections": [
+          {
+            "title": "The 5-Point Scale",
+            "content": "FlowState uses a simple 5-point mood scale:\n😢 Very Sad (1) - Feeling down, unmotivated\n😔 Sad (2) - Below average, some challenges\n😐 Neutral (3) - Average day, neither good nor bad\n😊 Happy (4) - Good mood, positive energy\n😄 Very Happy (5) - Excellent mood, highly energized",
+            "type": "text"
+          },
+          {
+            "title": "When to Log",
+            "content": "• Morning: How you start the day\n• Midday: Check-in during lunch\n• Evening: Reflect on the day\n• After completing important tasks\n• During mood changes",
+            "type": "list"
+          },
+          {
+            "title": "Adding Context",
+            "content": "Always add notes to your mood entries:\n• What influenced your mood?\n• Specific events or interactions\n• Physical factors (sleep, exercise, food)\n• Work-related stressors or wins",
+            "type": "text"
+          }
+        ],
+        "tips": [
+          "Be honest with your mood ratings",
+          "Look for patterns in your mood calendar",
+          "Use mood data to optimize your schedule"
+        ],
+        "nextSteps": [
+          "Log your mood for 7 consecutive days",
+          "Review your mood-productivity correlation"
+        ]
+      }
+    },
+    {
+      "id": "productivity_flow_state",
+      "title": "Achieving Flow State",
+      "description": "Techniques to enter and maintain deep focus periods",
+      "category": "productivity",
+      "difficulty": "intermediate",
+      "estimatedTime": "12 min",
+      "tags": ["focus", "flow", "deep work"],
+      "content": {
+        "introduction": "Flow state is a mental state of complete immersion in an activity. Learn how to achieve and maintain this optimal performance state.",
+        "sections": [
+          {
+            "title": "What is Flow State?",
+            "content": "Flow state is characterized by:\n• Complete focus on the task at hand\n• Loss of self-consciousness\n• Transformation of time perception\n• Intrinsic motivation\n• Effortless concentration\n• Optimal performance",
+            "type": "text"
+          },
+          {
+            "title": "Conditions for Flow",
+            "content": "1. Clear goals and immediate feedback\n2. Balance between challenge and skill level\n3. Elimination of distractions\n4. Proper environment setup\n5. Adequate energy and focus",
+            "type": "steps"
+          },
+          {
+            "title": "Techniques to Enter Flow",
+            "content": "• Start with a clear intention\n• Use the Pomodoro Technique\n• Create rituals and cues\n• Minimize interruptions\n• Choose optimal challenge level\n• Practice mindfulness meditation",
+            "type": "list"
+          }
+        ],
+        "tips": [
+          "Track when you naturally enter flow states",
+          "Identify your peak focus hours",
+          "Protect your flow time from interruptions"
+        ],
+        "nextSteps": [
+          "Try a 25-minute focused work session",
+          "Set up your ideal work environment"
+        ]
+      }
+    },
+    {
+      "id": "habit_streaks_mastery",
+      "title": "Building Unbreakable Habits",
+      "description": "Master the science of habit formation and streak maintenance",
+      "category": "habits",
+      "difficulty": "intermediate",
+      "estimatedTime": "10 min",
+      "tags": ["habits", "streaks", "consistency"],
+      "content": {
+        "introduction": "Habits are the compound interest of self-improvement. Learn how to build lasting habits and maintain long streaks.",
+        "sections": [
+          {
+            "title": "The Habit Loop",
+            "content": "Every habit consists of:\n• Cue: The trigger that starts the habit\n• Routine: The behavior itself\n• Reward: The benefit you get from the habit\n• Tracking: Monitoring your progress",
+            "type": "text"
+          },
+          {
+            "title": "Streak Protection System",
+            "content": "FlowState offers streak protection:\n• 3 protections per month\n• Use when life gets in the way\n• Reset on the 1st of each month\n• Save your longest streaks\n• Strategic use prevents discouragement",
+            "type": "text"
+          },
+          {
+            "title": "Building Strong Habits",
+            "content": "1. Start incredibly small\n2. Anchor to existing habits\n3. Celebrate immediately after\n4. Track consistently\n5. Focus on identity change\n6. Plan for obstacles",
+            "type": "steps"
+          }
+        ],
+        "tips": [
+          "Never break the chain twice in a row",
+          "Use implementation intentions: 'When X, then Y'",
+          "Make bad habits harder and good habits easier"
+        ],
+        "nextSteps": [
+          "Choose one habit to focus on for 30 days",
+          "Set up your habit environment"
+        ]
+      }
+    },
+    {
+      "id": "analytics_insights",
+      "title": "Reading Your Analytics",
+      "description": "Understand your productivity patterns and make data-driven improvements",
+      "category": "analytics",
+      "difficulty": "intermediate",
+      "estimatedTime": "15 min",
+      "tags": ["analytics", "data", "insights", "patterns"],
+      "content": {
+        "introduction": "Your analytics dashboard contains powerful insights about your productivity patterns. Learn how to interpret and act on this data.",
+        "sections": [
+          {
+            "title": "Key Metrics",
+            "content": "• Completion Rate: Percentage of tasks completed\n• Mood Average: Your emotional baseline\n• Streak Length: Consistency in habits\n• Active Time: Time spent on productive activities\n• Trend Analysis: Direction of improvement",
+            "type": "list"
+          },
+          {
+            "title": "Correlation Analysis",
+            "content": "The mood-productivity correlation shows:\n• Positive correlation: Better mood = higher productivity\n• Negative correlation: Higher productivity during tough times\n• No correlation: Mood and productivity are independent\n• Use this to optimize your schedule",
+            "type": "text"
+          },
+          {
+            "title": "Actionable Insights",
+            "content": "1. Identify your peak productivity hours\n2. Understand mood patterns\n3. Find optimal task distribution\n4. Spot procrastination patterns\n5. Adjust goals based on trends\n6. Plan around low-energy periods",
+            "type": "steps"
+          }
+        ],
+        "tips": [
+          "Review analytics weekly, not daily",
+          "Look for patterns over at least 2 weeks",
+          "Use insights to adjust your systems, not to judge yourself"
+        ],
+        "nextSteps": [
+          "Set up a weekly analytics review",
+          "Identify one pattern to optimize"
+        ]
+      }
+    },
+    {
+      "id": "time_management_advanced",
+      "title": "Advanced Time Management",
+      "description": "Master sophisticated time management techniques for peak productivity",
+      "category": "productivity",
+      "difficulty": "advanced",
+      "estimatedTime": "18 min",
+      "tags": ["time management", "advanced", "scheduling"],
+      "content": {
+        "introduction": "Take your time management to the next level with advanced techniques used by high performers.",
+        "sections": [
+          {
+            "title": "Time Blocking",
+            "content": "Time blocking involves:\n• Assigning specific time slots to tasks\n• Batching similar activities\n• Protecting focus time\n• Planning buffer periods\n• Color-coding by priority or project",
+            "type": "text"
+          },
+          {
+            "title": "Energy Management",
+            "content": "Align tasks with energy levels:\n• High energy: Creative and challenging work\n• Medium energy: Routine tasks and meetings\n• Low energy: Administrative work and planning\n• Track your energy patterns in FlowState",
+            "type": "text"
+          },
+          {
+            "title": "The 4 Ds Framework",
+            "content": "For every task, decide to:\n1. Do: Important and urgent\n2. Defer: Important but not urgent\n3. Delegate: Urgent but not important\n4. Delete: Neither important nor urgent",
+            "type": "steps"
+          }
+        ],
+        "tips": [
+          "Batch similar tasks together",
+          "Use your analytics to find optimal work patterns",
+          "Plan your week during low-energy periods"
+        ],
+        "nextSteps": [
+          "Create a time-blocked schedule for next week",
+          "Track your energy levels for 7 days"
+        ]
+      }
+    },
+    {
+      "id": "notification_optimization",
+      "title": "Smart Notification Setup",
+      "description": "Configure notifications that enhance rather than interrupt your flow",
+      "category": "productivity",
+      "difficulty": "beginner",
+      "estimatedTime": "7 min",
+      "tags": ["notifications", "focus", "smart features"],
+      "content": {
+        "introduction": "Notifications can make or break your productivity. Learn how to set up FlowState's smart notification system for optimal focus.",
+        "sections": [
+          {
+            "title": "Smart Learning",
+            "content": "FlowState learns from your patterns:\n• When you typically complete tasks\n• Your most productive hours\n• How you respond to different notification times\n• Optimal timing for different task types",
+            "type": "text"
+          },
+          {
+            "title": "Notification Types",
+            "content": "• Task reminders: Based on due dates and priorities\n• Habit prompts: Timed for maximum compliance\n• Streak alerts: When you're at risk of breaking streaks\n• Mood check-ins: Gentle reminders to log your mood\n• Achievement celebrations: Positive reinforcement",
+            "type": "list"
+          },
+          {
+            "title": "Customization Options",
+            "content": "1. Set quiet hours for deep work\n2. Choose notification sensitivity\n3. Enable/disable smart learning per habit\n4. Customize message tone and content\n5. Set maximum notifications per day",
+            "type": "steps"
+          }
+        ],
+        "tips": [
+          "Start with conservative notification settings",
+          "Give the system 2 weeks to learn your patterns",
+          "Regularly review and adjust based on effectiveness"
+        ],
+        "nextSteps": [
+          "Configure your notification preferences",
+          "Enable smart learning for one habit"
+        ]
+      }
+    }
+  ]
+}
