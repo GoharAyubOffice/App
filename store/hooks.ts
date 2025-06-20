@@ -1,6 +1,17 @@
 import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
 import { useMemo } from 'react';
 import type { AppDispatch, RootState } from './index';
+import {
+  selectOnboardingState,
+  selectCurrentStep,
+  selectTotalSteps,
+  selectIsOnboardingCompleted,
+  selectCanResumeOnboarding,
+  selectOnboardingGoals,
+  selectSelectedGoals,
+  selectOnboardingPreferences,
+  selectOnboardingProgress,
+} from './slices/onboardingSlice';
 
 // Typed hooks for Redux
 export const useAppDispatch = () => useDispatch<AppDispatch>();
@@ -158,11 +169,45 @@ export const useSidebar = () => {
   }), [sidebarOpen]);
 };
 
+// Onboarding hooks
+export const useOnboarding = () => {
+  return useAppSelector(selectOnboardingState);
+};
+
+export const useOnboardingStep = () => {
+  return useAppSelector(selectCurrentStep);
+};
+
+export const useOnboardingProgress = () => {
+  return useAppSelector(selectOnboardingProgress);
+};
+
+export const useIsOnboardingCompleted = () => {
+  return useAppSelector(selectIsOnboardingCompleted);
+};
+
+export const useCanResumeOnboarding = () => {
+  return useAppSelector(selectCanResumeOnboarding);
+};
+
+export const useOnboardingGoals = () => {
+  return useAppSelector(selectOnboardingGoals);
+};
+
+export const useSelectedGoals = () => {
+  return useAppSelector(selectSelectedGoals);
+};
+
+export const useOnboardingPreferences = () => {
+  return useAppSelector(selectOnboardingPreferences);
+};
+
 // Combined hook for common app state
 export const useAppState = () => {
   const auth = useAuth();
   const networkState = useNetworkState();
   const syncState = useSyncState();
+  const isOnboardingCompleted = useIsOnboardingCompleted();
   
   return useMemo(() => ({
     isAuthenticated: auth.isAuthenticated,
@@ -171,5 +216,6 @@ export const useAppState = () => {
     isOffline: networkState.isOffline,
     hasPendingSync: syncState.hasPendingSync,
     isReady: auth.isAuthenticated && !auth.isLoading,
-  }), [auth, networkState, syncState]);
+    needsOnboarding: auth.isAuthenticated && !isOnboardingCompleted,
+  }), [auth, networkState, syncState, isOnboardingCompleted]);
 };

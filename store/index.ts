@@ -6,14 +6,17 @@ import { FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist
 // Import reducers
 import authReducer from './slices/authSlice';
 import uiReducer from './slices/uiSlice';
+import onboardingReducer from './slices/onboardingSlice';
+import { syncApi } from './api/syncApi';
 
 // Configure persistence
 const persistConfig = {
   key: 'root',
   version: 1,
   storage: AsyncStorage,
-  // Only persist UI state and some auth state
-  whitelist: ['ui'],
+  // Only persist UI state, onboarding, and some auth state, exclude sync API cache
+  whitelist: ['ui', 'onboarding'],
+  blacklist: [syncApi.reducerPath],
 };
 
 // Auth persist config - only persist onboarding state, not sensitive auth data
@@ -41,14 +44,23 @@ const uiPersistConfig = {
   ],
 };
 
+// Onboarding persist config - persist entire onboarding state for resume capability
+const onboardingPersistConfig = {
+  key: 'onboarding',
+  storage: AsyncStorage,
+};
+
 // Create persisted reducers
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 const persistedUIReducer = persistReducer(uiPersistConfig, uiReducer);
+const persistedOnboardingReducer = persistReducer(onboardingPersistConfig, onboardingReducer);
 
 // Root reducer
 const rootReducer = combineReducers({
   auth: persistedAuthReducer,
   ui: persistedUIReducer,
+  onboarding: persistedOnboardingReducer,
+  [syncApi.reducerPath]: syncApi.reducer,
 });
 
 // Persist the root reducer
@@ -61,17 +73,13 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        ignoredPaths: ['auth.user', 'auth.session'],
+        warnAfter: 128,
       },
-      // Enable additional middleware for development
       immutableCheck: {
         warnAfter: 128,
       },
-      serializableCheck: {
-        warnAfter: 128,
-        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
-        ignoredPaths: ['auth.user', 'auth.session'],
-      },
-    }),
+    }).concat(syncApi.middleware),
   devTools: __DEV__,
 });
 
