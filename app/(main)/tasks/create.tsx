@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, useCurrentUser } from '../../../store/hooks';
 import { TaskForm } from '../../../components/tasks/TaskForm';
+import { PredefinedTasks } from '../../../components/tasks/PredefinedTasks';
 import { TaskActions, TaskData } from '../../../db/actions/taskActions';
 import { Project } from '../../../db/model/project';
 import { Spinner } from '../../../components/ui/Spinner';
@@ -23,6 +24,7 @@ export default function CreateTaskScreen() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  const [activeTab, setActiveTab] = useState<'custom' | 'templates'>('templates');
   const [toast, setToast] = useState<{
     visible: boolean;
     message: string;
@@ -43,34 +45,10 @@ export default function CreateTaskScreen() {
     error: isDarkMode ? '#EF4444' : '#DC2626',
   };
 
-  // Load available projects
+  // No need to load projects anymore
   useEffect(() => {
-    loadProjects();
+    setIsLoadingProjects(false);
   }, []);
-
-  const loadProjects = async () => {
-    try {
-      setIsLoadingProjects(true);
-      const availableProjects = await TaskActions.getAvailableProjects();
-      setProjects(availableProjects);
-      
-      if (availableProjects.length === 0) {
-        Alert.alert(
-          'No Projects Available',
-          'You need to create a project before you can create tasks. Would you like to create a project now?',
-          [
-            { text: 'Cancel', style: 'cancel', onPress: () => router.back() },
-            { text: 'Create Project', onPress: () => router.push('/(main)/projects/create' as any) },
-          ]
-        );
-      }
-    } catch (error) {
-      console.error('Error loading projects:', error);
-      showToast('Failed to load projects', 'error');
-    } finally {
-      setIsLoadingProjects(false);
-    }
-  };
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
     setToast({ visible: true, message, type });
@@ -94,6 +72,7 @@ export default function CreateTaskScreen() {
         ...taskData,
         createdBy: currentUser.id,
         assigneeId: taskData.assigneeId || currentUser.id, // Default to current user
+        projectId: 'default', // Use default project since we're not using projects
       };
 
       // Create the task
@@ -129,6 +108,13 @@ export default function CreateTaskScreen() {
     );
   };
 
+  const handlePredefinedTaskSelect = () => {
+    // Navigate back after selecting a predefined task
+    setTimeout(() => {
+      router.back();
+    }, 1000);
+  };
+
   if (isLoadingProjects) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
@@ -140,27 +126,7 @@ export default function CreateTaskScreen() {
     );
   }
 
-  if (projects.length === 0) {
-    return (
-      <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
-        <Ionicons name="folder-outline" size={64} color={colors.textSecondary} />
-        <Text style={[styles.emptyTitle, { color: colors.text }]}>
-          No Projects Available
-        </Text>
-        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-          Create a project first to organize your tasks
-        </Text>
-        <TouchableOpacity
-          style={[styles.createProjectButton, { backgroundColor: colors.primary }]}
-          onPress={() => router.push('/(main)/projects/create' as any)}
-        >
-          <Text style={styles.createProjectButtonText}>
-            Create Project
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  // Remove project requirement - tasks can be created without projects
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -175,21 +141,72 @@ export default function CreateTaskScreen() {
         </TouchableOpacity>
         
         <Text style={[styles.headerTitle, { color: colors.text }]}>
-          New Task
+          {activeTab === 'custom' ? 'New Task' : 'Task Templates'}
         </Text>
         
         {/* Placeholder for symmetry */}
         <View style={styles.headerButton} />
       </View>
 
-      {/* Task Form */}
-      <TaskForm
-        projects={projects}
-        onSubmit={handleSubmit}
-        onCancel={handleCancel}
-        isLoading={isLoading}
-        submitButtonText="Create Task"
-      />
+      {/* Tab Buttons */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === 'templates' && { backgroundColor: colors.primary },
+            { borderColor: colors.border }
+          ]}
+          onPress={() => setActiveTab('templates')}
+        >
+          <Ionicons 
+            name="library-outline" 
+            size={20} 
+            color={activeTab === 'templates' ? '#FFFFFF' : colors.textSecondary} 
+          />
+          <Text style={[
+            styles.tabText,
+            { color: activeTab === 'templates' ? '#FFFFFF' : colors.textSecondary }
+          ]}>
+            Templates
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[
+            styles.tabButton,
+            activeTab === 'custom' && { backgroundColor: colors.primary },
+            { borderColor: colors.border }
+          ]}
+          onPress={() => setActiveTab('custom')}
+        >
+          <Ionicons 
+            name="create-outline" 
+            size={20} 
+            color={activeTab === 'custom' ? '#FFFFFF' : colors.textSecondary} 
+          />
+          <Text style={[
+            styles.tabText,
+            { color: activeTab === 'custom' ? '#FFFFFF' : colors.textSecondary }
+          ]}>
+            Custom
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Content */}
+      {activeTab === 'templates' ? (
+        <PredefinedTasks
+          onTaskSelect={handlePredefinedTaskSelect}
+        />
+      ) : (
+        <TaskForm
+          projects={[]} // Empty projects array since we're not using projects
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+          isLoading={isLoading}
+          submitButtonText="Create Task"
+        />
+      )}
 
       {/* Toast */}
       <Toast
@@ -260,6 +277,27 @@ const styles = StyleSheet.create({
   createProjectButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+  },
+  tabText: {
+    fontSize: 14,
     fontWeight: '600',
   },
 });

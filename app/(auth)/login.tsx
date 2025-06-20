@@ -83,24 +83,19 @@ export default function LoginScreen() {
     const result = await authService.signIn({ email, password });
     
     if (result.success) {
-      router.replace('/(tabs)');
+      router.replace('/(main)');
     }
   };
 
   const handleSocialSignIn = async (provider: 'google' | 'apple') => {
     if (isLoading) return;
 
-    try {
-      const result = provider === 'google' 
-        ? await authService.signInWithGoogle()
-        : await authService.signInWithApple();
-      
-      if (result.success) {
-        // OAuth redirect will handle navigation
-      }
-    } catch (error) {
-      Alert.alert('Error', `Failed to sign in with ${provider}. Please try again.`);
-    }
+    // OAuth doesn't work in Expo Go
+    Alert.alert(
+      'OAuth Not Available', 
+      'Social sign-in requires a development build. Please use email/password or create a development build.',
+      [{ text: 'OK' }]
+    );
   };
 
   return (
@@ -234,7 +229,7 @@ export default function LoginScreen() {
         </TouchableOpacity>
 
         <View style={styles.forgotPasswordContainer}>
-          <Link href="/reset-password" style={styles.forgotPasswordLink}>
+          <Link href="/(auth)/reset-password" style={styles.forgotPasswordLink}>
             <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>
               Forgot your password?
             </Text>
@@ -280,7 +275,7 @@ export default function LoginScreen() {
         <Text style={[styles.footerText, { color: colors.textSecondary }]}>
           Don't have an account?{' '}
         </Text>
-        <Link href={{ pathname: "/signup" }} style={styles.signUpLink}>
+        <Link href="/(auth)/signup" style={styles.signUpLink}>
           <Text style={[styles.signUpLinkText, { color: colors.primary }]}>
             Sign Up
           </Text>

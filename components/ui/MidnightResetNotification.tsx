@@ -110,18 +110,16 @@ export const MidnightResetNotification: React.FC = () => {
     isDarkMode && styles.darkText,
   ];
 
-  if (!showNotification) {
-    return null;
-  }
-
+  // Always render but hide with opacity/pointerEvents instead of conditional return
   return (
     <Animated.View 
       style={[
         containerStyle,
         animatedStyle,
         Platform.OS === 'ios' && shadowStyle,
+        !showNotification && { opacity: 0, pointerEvents: 'none' as const },
       ]}
-      pointerEvents="none"
+      pointerEvents={showNotification ? "none" : "none"}
     >
       <View style={styles.content}>
         <View style={styles.iconContainer}>

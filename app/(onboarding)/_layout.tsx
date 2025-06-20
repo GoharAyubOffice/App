@@ -18,7 +18,7 @@ export default function OnboardingLayout() {
     }
 
     if (isOnboardingCompleted) {
-      router.replace('/(tabs)');
+      router.replace('/(main)');
       return;
     }
   }, [isAuthenticated, isOnboardingCompleted, router]);

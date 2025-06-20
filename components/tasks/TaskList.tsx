@@ -1,16 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FlatList, View, StyleSheet, RefreshControl, ListRenderItem } from 'react-native';
-import { withObservables } from '@nozbe/watermelondb/react';
 import { Task } from '../../db/model/task';
-import { taskQueries } from '../../db/queries/taskQueries';
+import { TaskActions } from '../../db/actions/taskActions';
 import { TaskListItem } from './TaskListItem';
 import { EmptyState } from '../ui/EmptyState';
 import { Spinner } from '../ui/Spinner';
-import { useTheme } from '../../store/hooks';
+import { useTheme, useCurrentUser } from '../../store/hooks';
 import { Ionicons } from '@expo/vector-icons';
 
 interface TaskListProps {
-  tasks: Task[];
+  queryType?: 'today' | 'all' | 'completed' | 'pending';
   onTaskPress?: (task: Task) => void;
   onTaskToggle?: (task: Task) => void;
   onCreateTask?: () => void;
@@ -23,225 +22,155 @@ interface TaskListProps {
   emptyStateActionText?: string;
 }
 
-const TaskListComponent: React.FC<TaskListProps> = ({
-  tasks,
+export const TaskList: React.FC<TaskListProps> = ({
+  queryType = 'today',
   onTaskPress,
   onTaskToggle,
   onCreateTask,
-  isLoading = false,
+  isLoading: externalLoading = false,
   isRefreshing = false,
   onRefresh,
   showProject = false,
   emptyStateTitle = "No tasks yet",
-  emptyStateDescription = "Create your first habit to get started on your productive journey.",
-  emptyStateActionText = "Create your first habit",
+  emptyStateDescription = "Create your first task to get started on your productive journey.",
+  emptyStateActionText = "Create your first task",
 }) => {
   const { isDarkMode } = useTheme();
+  const currentUser = useCurrentUser();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const colors = {
+    background: isDarkMode ? '#1A1A1A' : '#FFFFFF',
+    text: isDarkMode ? '#FFFFFF' : '#000000',
+  };
+
+  const loadTasks = async () => {
+    if (!currentUser?.id) {
+      setTasks([]);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      let fetchedTasks: Task[] = [];
+
+      switch (queryType) {
+        case 'today':
+          fetchedTasks = await TaskActions.getTodayTasks(currentUser.id);
+          break;
+        case 'all':
+          fetchedTasks = await TaskActions.getTasksByAssignee(currentUser.id);
+          break;
+        case 'completed':
+          const allTasks = await TaskActions.getTasksByAssignee(currentUser.id);
+          fetchedTasks = allTasks.filter(t => t.status === 'completed');
+          break;
+        case 'pending':
+          const allPendingTasks = await TaskActions.getTasksByAssignee(currentUser.id);
+          fetchedTasks = allPendingTasks.filter(t => t.status !== 'completed');
+          break;
+        default:
+          fetchedTasks = await TaskActions.getTodayTasks(currentUser.id);
+      }
+
+      console.log('Loaded tasks:', fetchedTasks.length, 'for query:', queryType);
+      setTasks(fetchedTasks);
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+      setTasks([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTasks();
+  }, [currentUser?.id, queryType]);
+
+  const handleRefresh = async () => {
+    await loadTasks();
+    onRefresh?.();
+  };
+
+  const handleTaskToggle = async (task: Task) => {
+    try {
+      const updatedTask = await TaskActions.toggleTaskStatus(task.id);
+      if (updatedTask) {
+        // Reload tasks to reflect changes
+        await loadTasks();
+        onTaskToggle?.(updatedTask);
+      }
+    } catch (error) {
+      console.error('Error toggling task:', error);
+    }
+  };
 
   const renderTaskItem: ListRenderItem<Task> = ({ item, index }) => (
     <TaskListItem
       task={item}
       onPress={onTaskPress}
-      onToggleComplete={onTaskToggle}
+      onToggleComplete={handleTaskToggle}
       showProject={showProject}
       style={index === 0 ? styles.firstItem : undefined}
     />
   );
 
-  const renderSeparator = () => (
-    <View style={[styles.separator, isDarkMode && styles.darkSeparator]} />
-  );
-
-  const renderEmptyState = () => {
-    if (isLoading) {
-      return (
-        <View style={styles.loadingContainer}>
-          <Spinner size="large" centered />
-        </View>
-      );
-    }
-
+  if (isLoading || externalLoading) {
     return (
-      <EmptyState
-        title={emptyStateTitle}
-        description={emptyStateDescription}
-        actionText={emptyStateActionText}
-        onActionPress={onCreateTask}
-        icon={
-          <Ionicons
-            name="checkmark-circle-outline"
-            size={64}
-            color={isDarkMode ? '#666666' : '#CCCCCC'}
-          />
-        }
-      />
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <Spinner size="large" color="#3B82F6" />
+      </View>
     );
-  };
-
-  const renderSkeletonLoader = () => (
-    <View style={styles.skeletonContainer}>
-      {Array.from({ length: 5 }).map((_, index) => (
-        <View key={index} style={styles.skeletonItem}>
-          <View style={[styles.skeletonCheckbox, isDarkMode && styles.darkSkeletonCheckbox]} />
-          <View style={styles.skeletonContent}>
-            <View style={[styles.skeletonTitle, isDarkMode && styles.darkSkeletonTitle]} />
-            <View style={[styles.skeletonDescription, isDarkMode && styles.darkSkeletonDescription]} />
-            <View style={[styles.skeletonDate, isDarkMode && styles.darkSkeletonDate]} />
-          </View>
-        </View>
-      ))}
-    </View>
-  );
-
-  if (isLoading && tasks.length === 0) {
-    return renderSkeletonLoader();
   }
 
   return (
-    <View style={[styles.container, isDarkMode && styles.darkContainer]}>
-      <FlatList
-        data={tasks}
-        renderItem={renderTaskItem}
-        keyExtractor={(item) => item.id}
-        ItemSeparatorComponent={renderSeparator}
-        ListEmptyComponent={renderEmptyState}
-        refreshControl={
-          onRefresh ? (
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              tintColor={isDarkMode ? '#FFFFFF' : '#000000'}
-              colors={['#007AFF']}
-            />
-          ) : undefined
-        }
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.contentContainer,
-          tasks.length === 0 && styles.emptyContentContainer,
-        ]}
-        testID="task-list"
-      />
-    </View>
+    <FlatList
+      data={tasks}
+      renderItem={renderTaskItem}
+      keyExtractor={(item) => item.id}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          tintColor="#3B82F6"
+        />
+      }
+      contentContainerStyle={[
+        styles.container,
+        tasks.length === 0 && styles.emptyContainer,
+      ]}
+      ListEmptyComponent={
+        <EmptyState
+          icon={<Ionicons name="checkmark-circle-outline" size={64} color="#9CA3AF" />}
+          title={emptyStateTitle}
+          description={emptyStateDescription}
+          actionText={emptyStateActionText}
+          onAction={onCreateTask}
+        />
+      }
+      showsVerticalScrollIndicator={false}
+    />
   );
 };
 
-// Enhanced component with withObservables for real-time updates
-const enhance = withObservables(['queryType'], ({ queryType = 'today' }) => {
-  let query;
-  
-  switch (queryType) {
-    case 'active':
-      query = taskQueries.getActiveTasks();
-      break;
-    case 'completed':
-      query = taskQueries.getCompletedTasks();
-      break;
-    case 'overdue':
-      query = taskQueries.getOverdueTasks();
-      break;
-    case 'upcoming':
-      query = taskQueries.getUpcomingTasks();
-      break;
-    case 'today':
-    default:
-      query = taskQueries.getTodaysTasks();
-      break;
-  }
-
-  return {
-    tasks: query,
-  };
-});
-
-export const TaskList = enhance(TaskListComponent);
-
-// Export the base component for cases where you want to pass tasks directly
-export const TaskListBase = TaskListComponent;
-
 const styles = StyleSheet.create({
   container: {
+    paddingHorizontal: 0,
+  },
+  emptyContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-  darkContainer: {
-    backgroundColor: '#1A1A1A',
-  },
-  contentContainer: {
-    flexGrow: 1,
-  },
-  emptyContentContainer: {
-    flex: 1,
-  },
-  firstItem: {
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#F0F0F0',
-    marginLeft: 52,
-  },
-  darkSeparator: {
-    backgroundColor: '#404040',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 64,
+    paddingVertical: 40,
   },
-  skeletonContainer: {
-    flex: 1,
-    paddingVertical: 8,
-  },
-  skeletonItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 16,
-    backgroundColor: '#FFFFFF',
-  },
-  skeletonCheckbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#F0F0F0',
-    marginRight: 12,
-    marginTop: 2,
-  },
-  darkSkeletonCheckbox: {
-    backgroundColor: '#404040',
-  },
-  skeletonContent: {
-    flex: 1,
-  },
-  skeletonTitle: {
-    height: 18,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 4,
-    marginBottom: 8,
-    width: '80%',
-  },
-  darkSkeletonTitle: {
-    backgroundColor: '#404040',
-  },
-  skeletonDescription: {
-    height: 14,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 4,
-    marginBottom: 8,
-    width: '60%',
-  },
-  darkSkeletonDescription: {
-    backgroundColor: '#404040',
-  },
-  skeletonDate: {
-    height: 12,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 4,
-    width: '30%',
-  },
-  darkSkeletonDate: {
-    backgroundColor: '#404040',
+  firstItem: {
+    marginTop: 0,
   },
 });

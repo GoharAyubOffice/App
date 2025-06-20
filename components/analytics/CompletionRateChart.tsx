@@ -6,15 +6,15 @@ import {
   Dimensions,
   TouchableOpacity,
   Animated,
+  ScrollView,
 } from 'react-native';
-import { VictoryChart, VictoryLine, VictoryArea, VictoryAxis, VictoryTooltip } from 'victory-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../store/hooks';
 import { ChartDataPoint, CompletionRateData } from '../../services/analyticsEngine';
 
 const { width } = Dimensions.get('window');
 const chartWidth = width - 32;
-const chartHeight = 220;
+const chartHeight = 180;
 
 interface CompletionRateChartProps {
   data: CompletionRateData;
@@ -42,304 +42,194 @@ export const CompletionRateChart: React.FC<CompletionRateChartProps> = ({
     }
   }, [loading, fadeAnim]);
 
+  const colors = {
+    background: isDarkMode ? '#2A2A2A' : '#FFFFFF',
+    text: isDarkMode ? '#FFFFFF' : '#1A1A1A',
+    textSecondary: isDarkMode ? '#CCCCCC' : '#666666',
+    primary: '#3B82F6',
+    success: '#10B981',
+    warning: '#F59E0B',
+    surface: isDarkMode ? '#1F1F1F' : '#F8F9FA',
+    border: isDarkMode ? '#404040' : '#E5E7EB',
+  };
+
   const chartData = viewMode === 'daily' ? data.daily : data.weekly;
+  const maxValue = Math.max(...chartData.map(d => d.y), 100);
   
   const handleDataPointPress = (dataPoint: ChartDataPoint) => {
     setSelectedPoint(dataPoint);
     onDataPointPress?.(dataPoint);
   };
 
-  const getTrendIcon = () => {
-    switch (data.trend) {
-      case 'improving':
-        return <Ionicons name="trending-up" size={16} color="#4CAF50" />;
-      case 'declining':
-        return <Ionicons name="trending-down" size={16} color="#FF6B6B" />;
-      default:
-        return <Ionicons name="remove" size={16} color="#9E9E9E" />;
-    }
-  };
-
   const getTrendColor = () => {
     switch (data.trend) {
-      case 'improving': return '#4CAF50';
-      case 'declining': return '#FF6B6B';
-      default: return '#9E9E9E';
+      case 'improving': return colors.success;
+      case 'declining': return '#EF4444';
+      default: return colors.textSecondary;
     }
   };
 
-  const getTrendText = () => {
-    const currentRate = data.currentRate.toFixed(1);
-    const previousRate = data.previousRate.toFixed(1);
-    const change = Math.abs(data.currentRate - data.previousRate).toFixed(1);
-    
+  const getTrendIcon = () => {
     switch (data.trend) {
-      case 'improving':
-        return `+${change}% from previous period`;
-      case 'declining':
-        return `-${change}% from previous period`;
-      default:
-        return 'No significant change';
+      case 'improving': return 'trending-up';
+      case 'declining': return 'trending-down';
+      default: return 'remove';
     }
   };
 
-  const containerStyle = [
-    styles.container,
-    isDarkMode && styles.darkContainer,
-  ];
-
-  const cardStyle = [
-    styles.card,
-    isDarkMode && styles.darkCard,
-  ];
-
-  const textStyle = [
-    styles.text,
-    isDarkMode && styles.darkText,
-  ];
-
-  const titleStyle = [
-    styles.title,
-    isDarkMode && styles.darkTitle,
-  ];
-
-  const subtitleStyle = [
-    styles.subtitle,
-    isDarkMode && styles.darkSubtitle,
-  ];
-
-  // Victory chart theme
-  const chartTheme = {
-    axis: {
-      style: {
-        axis: { stroke: isDarkMode ? '#444444' : '#E9ECEF', strokeWidth: 1 },
-        grid: { stroke: isDarkMode ? '#333333' : '#F5F5F5', strokeWidth: 0.5 },
-        ticks: { stroke: isDarkMode ? '#666666' : '#CCCCCC', size: 4 },
-        tickLabels: { 
-          fontSize: 11, 
-          padding: 8,
-          fill: isDarkMode ? '#CCCCCC' : '#666666',
-          fontFamily: 'System',
-        },
-      },
-    },
-    line: {
-      style: {
-        data: { 
-          stroke: '#007AFF', 
-          strokeWidth: 3,
-          strokeLinecap: 'round',
-          strokeLinejoin: 'round',
-        },
-      },
-    },
-    area: {
-      style: {
-        data: { 
-          fill: 'url(#gradient)',
-          fillOpacity: 0.3,
-        },
-      },
-    },
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    });
   };
 
   if (loading) {
     return (
-      <View style={containerStyle}>
-        <View style={cardStyle}>
-          <View style={styles.header}>
-            <Text style={titleStyle}>Completion Rate</Text>
-            <View style={styles.loadingIndicator}>
-              <Text style={subtitleStyle}>Loading...</Text>
-            </View>
-          </View>
-          <View style={[styles.chartContainer, styles.loadingChart]}>
-            <Ionicons 
-              name="analytics" 
-              size={48} 
-              color={isDarkMode ? '#666666' : '#CCCCCC'} 
-            />
-          </View>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+            Loading chart...
+          </Text>
         </View>
       </View>
     );
   }
 
   return (
-    <Animated.View style={[containerStyle, { opacity: fadeAnim }]}>
-      <View style={cardStyle}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.titleSection}>
-            <Text style={titleStyle}>Completion Rate</Text>
-            <View style={styles.currentRate}>
-              <Text style={[styles.rateValue, { color: getTrendColor() }]}>
-                {data.currentRate.toFixed(1)}%
-              </Text>
-              <View style={styles.trendIndicator}>
-                {getTrendIcon()}
-                <Text style={[styles.trendText, { color: getTrendColor() }]}>
-                  {getTrendText()}
-                </Text>
-              </View>
-            </View>
-          </View>
-          
-          <View style={styles.viewModeToggle}>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                viewMode === 'daily' && styles.activeToggle,
-                viewMode === 'daily' && isDarkMode && styles.darkActiveToggle,
-              ]}
-              onPress={() => setViewMode('daily')}
-            >
-              <Text
-                style={[
-                  styles.toggleText,
-                  viewMode === 'daily' && styles.activeToggleText,
-                  isDarkMode && styles.darkToggleText,
-                ]}
-              >
-                Daily
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.toggleButton,
-                viewMode === 'weekly' && styles.activeToggle,
-                viewMode === 'weekly' && isDarkMode && styles.darkActiveToggle,
-              ]}
-              onPress={() => setViewMode('weekly')}
-            >
-              <Text
-                style={[
-                  styles.toggleText,
-                  viewMode === 'weekly' && styles.activeToggleText,
-                  isDarkMode && styles.darkToggleText,
-                ]}
-              >
-                Weekly
-              </Text>
-            </TouchableOpacity>
+    <Animated.View 
+      style={[
+        styles.container, 
+        { backgroundColor: colors.background, opacity: fadeAnim }
+      ]}
+    >
+      {/* Header */}
+      <View style={styles.header}>
+        <View>
+          <Text style={[styles.title, { color: colors.text }]}>
+            Completion Rate
+          </Text>
+          <View style={styles.trendContainer}>
+            <Ionicons 
+              name={getTrendIcon()} 
+              size={16} 
+              color={getTrendColor()} 
+            />
+            <Text style={[styles.trendText, { color: getTrendColor() }]}>
+              {data.currentRate}% vs {data.previousRate}% last week
+            </Text>
           </View>
         </View>
-
-        {/* Chart */}
-        <View style={styles.chartContainer}>
-          <VictoryChart
-            theme={chartTheme}
-            width={chartWidth}
-            height={chartHeight}
-            padding={{ left: 50, top: 20, right: 40, bottom: 50 }}
-            domainPadding={{ x: 20 }}
+        
+        <View style={styles.toggleContainer}>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              viewMode === 'daily' && { backgroundColor: colors.primary },
+              { borderColor: colors.border }
+            ]}
+            onPress={() => setViewMode('daily')}
           >
-            {/* Gradient definition */}
-            <defs>
-              <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#007AFF" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#007AFF" stopOpacity="0.05" />
-              </linearGradient>
-            </defs>
-
-            {/* X Axis */}
-            <VictoryAxis
-              dependentAxis={false}
-              tickFormat={(t, i) => {
-                if (viewMode === 'daily') {
-                  const date = new Date(t);
-                  return `${date.getMonth() + 1}/${date.getDate()}`;
-                } else {
-                  return `Week ${i + 1}`;
-                }
-              }}
-              style={chartTheme.axis.style}
-            />
-
-            {/* Y Axis */}
-            <VictoryAxis
-              dependentAxis
-              tickFormat={(t) => `${t}%`}
-              style={chartTheme.axis.style}
-            />
-
-            {/* Area Chart */}
-            <VictoryArea
-              data={chartData}
-              style={chartTheme.area.style}
-              animate={{
-                duration: 1000,
-                onLoad: { duration: 500 },
-              }}
-            />
-
-            {/* Line Chart */}
-            <VictoryLine
-              data={chartData}
-              style={chartTheme.line.style}
-              animate={{
-                duration: 1000,
-                onLoad: { duration: 500 },
-              }}
-              labelComponent={
-                <VictoryTooltip
-                  flyoutStyle={{
-                    stroke: isDarkMode ? '#444444' : '#E9ECEF',
-                    fill: isDarkMode ? '#2A2A2A' : '#FFFFFF',
-                  }}
-                  style={{
-                    fill: isDarkMode ? '#FFFFFF' : '#1A1A1A',
-                    fontSize: 12,
-                  }}
-                />
-              }
-            />
-          </VictoryChart>
+            <Text style={[
+              styles.toggleText,
+              { color: viewMode === 'daily' ? '#FFFFFF' : colors.textSecondary }
+            ]}>
+              Daily
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              viewMode === 'weekly' && { backgroundColor: colors.primary },
+              { borderColor: colors.border }
+            ]}
+            onPress={() => setViewMode('weekly')}
+          >
+            <Text style={[
+              styles.toggleText,
+              { color: viewMode === 'weekly' ? '#FFFFFF' : colors.textSecondary }
+            ]}>
+              Weekly
+            </Text>
+          </TouchableOpacity>
         </View>
+      </View>
 
-        {/* Selected Point Details */}
-        {selectedPoint && (
-          <View style={[styles.selectedPointDetails, isDarkMode && styles.darkSelectedPointDetails]}>
-            <Text style={[styles.selectedPointTitle, isDarkMode && styles.darkSelectedPointTitle]}>
-              {viewMode === 'daily' ? 'Selected Day' : 'Selected Week'}
-            </Text>
-            <Text style={[styles.selectedPointValue, isDarkMode && styles.darkSelectedPointValue]}>
-              {selectedPoint.label}
-            </Text>
-            {selectedPoint.metadata && (
-              <Text style={[styles.selectedPointMetadata, isDarkMode && styles.darkSelectedPointMetadata]}>
-                {selectedPoint.metadata.tasksCompleted} of {selectedPoint.metadata.totalTasks} tasks completed
-              </Text>
-            )}
-          </View>
-        )}
+      {/* Simple Bar Chart */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.chartContainer}
+      >
+        <View style={styles.chart}>
+          {chartData.slice(-14).map((dataPoint, index) => {
+            const barHeight = (dataPoint.y / maxValue) * (chartHeight - 40);
+            const isSelected = selectedPoint?.x === dataPoint.x;
+            
+            return (
+              <TouchableOpacity
+                key={`${dataPoint.x}-${index}`}
+                style={styles.barContainer}
+                onPress={() => handleDataPointPress(dataPoint)}
+              >
+                <View style={styles.barWrapper}>
+                  {/* Value label */}
+                  <Text style={[styles.valueLabel, { color: colors.text }]}>
+                    {dataPoint.y}%
+                  </Text>
+                  
+                  {/* Bar */}
+                  <View 
+                    style={[
+                      styles.bar,
+                      {
+                        height: Math.max(barHeight, 4),
+                        backgroundColor: isSelected ? colors.primary : colors.surface,
+                        borderColor: isSelected ? colors.primary : colors.border,
+                        borderWidth: isSelected ? 2 : 1,
+                      }
+                    ]}
+                  />
+                  
+                  {/* Date label */}
+                  <Text style={[styles.dateLabel, { color: colors.textSecondary }]}>
+                    {formatDate(dataPoint.x as string)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ScrollView>
 
-        {/* Summary Stats */}
-        <View style={styles.summaryStats}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statLabel, isDarkMode && styles.darkStatLabel]}>
-              Current Period
-            </Text>
-            <Text style={[styles.statValue, { color: getTrendColor() }]}>
-              {data.currentRate.toFixed(1)}%
-            </Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={[styles.statLabel, isDarkMode && styles.darkStatLabel]}>
-              Previous Period
-            </Text>
-            <Text style={[styles.statValue, isDarkMode && styles.darkStatValue]}>
-              {data.previousRate.toFixed(1)}%
-            </Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={[styles.statLabel, isDarkMode && styles.darkStatLabel]}>
-              Data Points
-            </Text>
-            <Text style={[styles.statValue, isDarkMode && styles.darkStatValue]}>
-              {chartData.length}
-            </Text>
-          </View>
+      {/* Summary Stats */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, { color: colors.text }]}>
+            {data.currentRate}%
+          </Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+            Current
+          </Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, { color: colors.text }]}>
+            {data.previousRate}%
+          </Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+            Previous
+          </Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, { color: getTrendColor() }]}>
+            {data.trend}
+          </Text>
+          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+            Trend
+          </Text>
         </View>
       </View>
     </Animated.View>
@@ -348,177 +238,115 @@ export const CompletionRateChart: React.FC<CompletionRateChartProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 8,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
     marginHorizontal: 16,
+    marginVertical: 8,
+    padding: 16,
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
   },
-  darkContainer: {
-    // No additional styles needed
+  loadingContainer: {
+    height: chartHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  darkCard: {
-    backgroundColor: '#2A2A2A',
+  loadingText: {
+    fontSize: 16,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 20,
-  },
-  titleSection: {
-    flex: 1,
+    marginBottom: 16,
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 8,
-  },
-  darkTitle: {
-    color: '#FFFFFF',
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#666666',
-  },
-  darkSubtitle: {
-    color: '#CCCCCC',
-  },
-  text: {
-    fontSize: 16,
-    color: '#1A1A1A',
-  },
-  darkText: {
-    color: '#FFFFFF',
-  },
-  currentRate: {
-    alignItems: 'flex-start',
-  },
-  rateValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
     marginBottom: 4,
   },
-  trendIndicator: {
+  trendContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
   trendText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
   },
-  viewModeToggle: {
+  toggleContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F8F9FA',
     borderRadius: 8,
-    padding: 2,
+    overflow: 'hidden',
   },
   toggleButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
-  },
-  activeToggle: {
-    backgroundColor: '#007AFF',
-  },
-  darkActiveToggle: {
-    backgroundColor: '#4A9EFF',
+    borderWidth: 1,
   },
   toggleText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#666666',
-  },
-  darkToggleText: {
-    color: '#CCCCCC',
-  },
-  activeToggleText: {
-    color: '#FFFFFF',
   },
   chartContainer: {
-    alignItems: 'center',
-    marginVertical: 10,
+    marginHorizontal: -4,
   },
-  loadingChart: {
-    height: chartHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingIndicator: {
+  chart: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
+    height: chartHeight,
+    paddingHorizontal: 8,
+    paddingBottom: 20,
+  },
+  barContainer: {
+    marginHorizontal: 2,
+  },
+  barWrapper: {
     alignItems: 'center',
-    gap: 8,
+    minWidth: 32,
   },
-  selectedPointDetails: {
-    backgroundColor: '#F8F9FA',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  darkSelectedPointDetails: {
-    backgroundColor: '#333333',
-  },
-  selectedPointTitle: {
-    fontSize: 12,
+  valueLabel: {
+    fontSize: 10,
     fontWeight: '500',
-    color: '#666666',
     marginBottom: 4,
   },
-  darkSelectedPointTitle: {
-    color: '#CCCCCC',
+  bar: {
+    width: 24,
+    borderRadius: 4,
+    marginBottom: 8,
   },
-  selectedPointValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 2,
+  dateLabel: {
+    fontSize: 9,
+    transform: [{ rotate: '-45deg' }],
+    width: 40,
+    textAlign: 'center',
   },
-  darkSelectedPointValue: {
-    color: '#FFFFFF',
-  },
-  selectedPointMetadata: {
-    fontSize: 12,
-    color: '#666666',
-  },
-  darkSelectedPointMetadata: {
-    color: '#CCCCCC',
-  },
-  summaryStats: {
+  statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 20,
+    alignItems: 'center',
+    marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E9ECEF',
+    borderTopColor: '#E5E7EB',
   },
   statItem: {
     alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 2,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666666',
-    marginBottom: 4,
   },
-  darkStatLabel: {
-    color: '#CCCCCC',
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  darkStatValue: {
-    color: '#FFFFFF',
+  statDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#E5E7EB',
   },
 });
-
-export default CompletionRateChart;

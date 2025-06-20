@@ -1,8 +1,9 @@
-import { Database } from '@nozbe/watermelondb';
-import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
+// Temporarily disabled WatermelonDB for Expo Go testing
+// import { Database } from '@nozbe/watermelondb';
+// import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
 import { Platform } from 'react-native';
 
-import { schema } from './schema';
+// import { schema } from './schema';
 import { Profile } from './model/profile';
 import { Workspace } from './model/workspace';
 import { Project } from './model/project';
@@ -21,40 +22,41 @@ import { DailyActivity } from './model/dailyActivity';
 import { StreakProtection } from './model/streakProtection';
 import { MoodEntry } from './model/moodEntry';
 
-const adapter = new SQLiteAdapter({
-  schema,
-  dbName: 'FlowStateApp',
-  migrationEvents: {
-    onSuccess() {},
-    onStart() {},
-    onError() {},
+// Mock database for Expo Go testing
+export const database = {
+  get: (tableName: string) => ({
+    query: () => ({
+      fetch: async () => [],
+      observe: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
+    }),
+    create: async () => ({
+      id: Math.random().toString(36).substr(2, 9),
+      _raw: {},
+    }),
+    find: async () => ({
+      id: Math.random().toString(36).substr(2, 9),
+      _raw: {},
+    }),
+  }),
+  collections: {
+    get: (tableName: string) => ({
+      query: () => ({
+        fetch: async () => [],
+        observe: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }),
+      }),
+      create: async () => ({
+        id: Math.random().toString(36).substr(2, 9),
+        _raw: {},
+      }),
+      find: async () => ({
+        id: Math.random().toString(36).substr(2, 9),
+        _raw: {},
+      }),
+    }),
   },
-  onSetUpError: (error: any) => {
-    console.error('Database setup error:', error);
-  },
-});
-
-export const database = new Database({
-  adapter,
-  modelClasses: [
-    Profile,
-    Workspace,
-    Project,
-    Task,
-    Subtask,
-    Comment,
-    Tag,
-    TaskTag,
-    WorkspaceMember,
-    Attachment,
-    TimeEntry,
-    ActivityLog,
-    TaskCompletion,
-    UserStreak,
-    DailyActivity,
-    StreakProtection,
-    MoodEntry,
-  ],
-});
+  write: async (fn: Function) => fn(),
+  read: async (fn: Function) => fn(),
+  action: async (fn: Function) => fn(),
+} as any;
 
 export { Profile, Workspace, Project, Task, Subtask, Comment, Tag, TaskTag, WorkspaceMember, Attachment, TimeEntry, ActivityLog, TaskCompletion, UserStreak, DailyActivity, StreakProtection, MoodEntry };

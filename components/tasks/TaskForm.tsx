@@ -78,7 +78,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     description: initialData?.description || '',
     status: initialData?.status || 'todo',
     priority: initialData?.priority || 'medium',
-    projectId: initialData?.projectId || (projects[0]?.id || ''),
+    projectId: 'default', // Always use default since we don't use projects
     dueDate: initialData?.dueDate || null,
   });
 
@@ -108,15 +108,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     }
   }, []);
 
-  // Smart defaults
-  useEffect(() => {
-    if (!initialData && projects.length > 0 && !formData.projectId) {
-      setFormData(prev => ({
-        ...prev,
-        projectId: projects[0].id,
-      }));
-    }
-  }, [projects, initialData, formData.projectId]);
+  // Remove project dependency - no smart defaults needed
 
   const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -147,10 +139,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       errors.description = `Description must be less than ${DESCRIPTION_MAX_LENGTH} characters`;
     }
 
-    // Validate project
-    if (!formData.projectId) {
-      errors.projectId = 'Please select a project';
-    }
+    // No project validation needed anymore
 
     // Validate due date
     if (formData.dueDate) {
@@ -307,61 +296,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
           )}
         </View>
 
-        {/* Project Selection */}
-        <View style={styles.inputGroup}>
-          <Text style={[styles.label, { color: colors.text }]}>
-            Project *
-          </Text>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.projectsList}
-          >
-            {projects.map((project) => (
-              <TouchableOpacity
-                key={project.id}
-                style={[
-                  styles.projectItem,
-                  {
-                    backgroundColor: formData.projectId === project.id 
-                      ? colors.primary 
-                      : colors.surface,
-                    borderColor: formData.projectId === project.id 
-                      ? colors.primary 
-                      : colors.border,
-                  },
-                ]}
-                onPress={() => handleInputChange('projectId', project.id)}
-                disabled={isLoading}
-              >
-                <View 
-                  style={[
-                    styles.projectColor, 
-                    { backgroundColor: (project as any).color || colors.primary }
-                  ]} 
-                />
-                <Text 
-                  style={[
-                    styles.projectName,
-                    {
-                      color: formData.projectId === project.id 
-                        ? '#FFFFFF' 
-                        : colors.text,
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {(project as any).name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          {formErrors.projectId && (
-            <Text style={[styles.errorText, { color: colors.error }]}>
-              {formErrors.projectId}
-            </Text>
-          )}
-        </View>
+        {/* Removed Project Selection - tasks are standalone now */}
 
         {/* Status Selection */}
         <View style={styles.inputGroup}>

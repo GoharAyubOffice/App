@@ -12,7 +12,7 @@ export default function AuthLayout() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace('/(tabs)');
+      router.replace('/(main)');
     }
   }, [isAuthenticated, router]);
 

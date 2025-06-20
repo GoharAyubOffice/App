@@ -15,6 +15,8 @@ import { useTheme, useCurrentUser } from '@/store/hooks';
 import { defineMidnightResetTask, registerMidnightResetTask, setUserIdForBackgroundTasks } from '@/tasks/midnightResetTask';
 import { defineStreakMonitorTask, registerStreakMonitorTask, setUserIdForStreakMonitor } from '@/tasks/streakMonitorTask';
 import { MidnightResetNotification } from '@/components/ui/MidnightResetNotification';
+import { CriticalUpdateModal } from '@/components/CriticalUpdateModal';
+import { useUpdates } from '@/hooks/useUpdates';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -23,7 +25,7 @@ export {
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: '(tabs)',
+  initialRouteName: '(onboarding)',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -44,10 +46,14 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
-  // Initialize background tasks
+  // Initialize background tasks (disabled for Expo Go)
   useEffect(() => {
     const initializeBackgroundTasks = async () => {
       try {
+        // Skip background tasks in Expo Go
+        console.log('Skipping background tasks for Expo Go testing');
+        return;
+        
         console.log('Initializing background tasks...');
         
         // Define the background tasks
@@ -104,12 +110,16 @@ function RootLayoutNav() {
   const systemColorScheme = useColorScheme();
   const { isDarkMode } = useTheme();
   const currentUser = useCurrentUser();
+  const { isCriticalUpdate, applyUpdate } = useUpdates();
   
   // Use Redux theme state, fallback to system preference
   const effectiveTheme = isDarkMode !== null ? isDarkMode : systemColorScheme === 'dark';
 
-  // Set user ID for background tasks when user is available
+  // Set user ID for background tasks when user is available (disabled for Expo Go)
   useEffect(() => {
+    // Skip background task user ID setting for Expo Go testing
+    return;
+    
     if (currentUser?.id) {
       setUserIdForBackgroundTasks(currentUser.id);
       setUserIdForStreakMonitor(currentUser.id);
@@ -119,10 +129,16 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={effectiveTheme ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(main)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
       <MidnightResetNotification />
+      <CriticalUpdateModal 
+        visible={isCriticalUpdate} 
+        onRestart={applyUpdate} 
+      />
     </ThemeProvider>
   );
 }

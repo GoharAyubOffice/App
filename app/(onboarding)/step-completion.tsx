@@ -110,7 +110,7 @@ export default function OnboardingCompletionScreen() {
   };
 
   const handleGetStarted = () => {
-    router.replace('/(tabs)');
+    router.replace('/(main)');
   };
 
   const handleRetry = () => {

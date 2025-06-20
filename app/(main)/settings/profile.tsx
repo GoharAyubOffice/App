@@ -20,11 +20,7 @@ import {
   useAppDispatch 
 } from '../../../store/hooks';
 import { setAuth, updateUserProfile } from '../../../store/slices/authSlice';
-import { UserProfileActions, UserProfileData } from '../../../db/actions/userProfileActions';
-import { UploadProgress } from '../../../services/storageService';
-import { Spinner } from '../../../components/ui/Spinner';
-import { ErrorMessage } from '../../../components/ui/ErrorMessage';
-import { Toast } from '../../../components/ui/Toast';
+import { mockStorage } from '../../../store/mockStorage';
 
 interface FormData {
   fullName: string;
@@ -56,7 +52,6 @@ export default function ProfileScreen() {
   // Avatar state
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
 
   // Loading and UI state
   const [isLoading, setIsLoading] = useState(false);
@@ -115,10 +110,10 @@ export default function ProfileScreen() {
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
     setToast({ visible: true, message, type });
-  };
-
-  const hideToast = () => {
-    setToast(prev => ({ ...prev, visible: false }));
+    // Auto-hide toast after 3 seconds
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, visible: false }));
+    }, 3000);
   };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
@@ -243,28 +238,34 @@ export default function ProfileScreen() {
     );
   };
 
-  const validateForm = async (): Promise<boolean> => {
-    const validation = await UserProfileActions.validateProfileData(formData);
-    
-    if (!validation.isValid) {
-      setFormErrors(validation.errors);
-      return false;
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
+
+    // Validate full name
+    if (!formData.fullName.trim()) {
+      errors.fullName = 'Full name is required';
+    } else if (formData.fullName.trim().length < 2) {
+      errors.fullName = 'Full name must be at least 2 characters';
     }
 
-    // Check username availability if username changed
-    if (formData.username !== (currentUser?.user_metadata?.username || '')) {
-      const isAvailable = await UserProfileActions.checkUsernameAvailability(
-        formData.username,
-        currentUser?.id
-      );
-      
-      if (!isAvailable) {
-        setFormErrors({ username: 'Username is already taken' });
-        return false;
-      }
+    // Validate username
+    if (!formData.username.trim()) {
+      errors.username = 'Username is required';
+    } else if (formData.username.trim().length < 3) {
+      errors.username = 'Username must be at least 3 characters';
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      errors.username = 'Username can only contain letters, numbers, and underscores';
     }
 
-    return true;
+    // Validate email
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleSave = async () => {
@@ -275,7 +276,7 @@ export default function ProfileScreen() {
 
     try {
       // Validate form
-      const isValid = await validateForm();
+      const isValid = validateForm();
       if (!isValid) {
         setIsSaving(false);
         return;
@@ -283,68 +284,19 @@ export default function ProfileScreen() {
 
       let newAvatarUrl = avatarUri;
 
-      // Upload new avatar if there's a preview
+      // Handle avatar changes
       if (avatarPreview) {
-        setIsUploadingAvatar(true);
-        
-        const uploadResult = await UserProfileActions.updateAvatar(
-          currentUser.id,
-          avatarPreview,
-          (progress) => setUploadProgress(progress)
-        );
-
-        setIsUploadingAvatar(false);
-        setUploadProgress(null);
-
-        if (!uploadResult.success) {
-          setGeneralError(uploadResult.error || 'Failed to upload avatar');
-          setIsSaving(false);
-          return;
-        }
-
-        newAvatarUrl = uploadResult.avatarUrl || null;
+        // For demo purposes, just use the preview URI
+        newAvatarUrl = avatarPreview;
         setAvatarUri(newAvatarUrl);
         setAvatarPreview(null);
-      } else if (avatarUri === null && currentUser.user_metadata?.avatar_url) {
-        // Remove avatar if it was removed
-        const removeResult = await UserProfileActions.removeAvatar(currentUser.id);
-        if (!removeResult.success) {
-          console.warn('Failed to remove avatar:', removeResult.error);
-        }
+        console.log('Avatar updated:', newAvatarUrl);
+      } else if (avatarUri === null) {
         newAvatarUrl = null;
-      }
-
-      // Update profile
-      const profileData: Partial<UserProfileData> = {
-        fullName: formData.fullName,
-        username: formData.username,
-        email: formData.email,
-        avatarUrl: newAvatarUrl || undefined,
-      };
-
-      const updatedProfile = await UserProfileActions.updateProfile(
-        currentUser.id,
-        profileData
-      );
-
-      if (!updatedProfile) {
-        setGeneralError('Failed to update profile. Please try again.');
-        setIsSaving(false);
-        return;
+        console.log('Avatar removed');
       }
 
       // Update Redux state with new user data
-      const updatedUser = {
-        ...currentUser,
-        email: formData.email,
-        user_metadata: {
-          ...currentUser.user_metadata,
-          full_name: formData.fullName,
-          username: formData.username,
-          avatar_url: newAvatarUrl,
-        },
-      };
-      
       dispatch(updateUserProfile({
         user_metadata: {
           full_name: formData.fullName,
@@ -352,6 +304,14 @@ export default function ProfileScreen() {
           avatar_url: newAvatarUrl,
         }
       }));
+
+      // Mock storage update for consistency
+      console.log('Profile updated:', {
+        fullName: formData.fullName,
+        username: formData.username,
+        email: formData.email,
+        avatarUrl: newAvatarUrl,
+      });
 
       showToast('Profile updated successfully!', 'success');
       setHasChanges(false);
@@ -408,18 +368,6 @@ export default function ProfileScreen() {
               />
             </View>
           )}
-          
-          {/* Upload progress overlay */}
-          {isUploadingAvatar && uploadProgress && (
-            <View style={styles.uploadOverlay}>
-              <View style={[styles.progressContainer, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.progressText, { color: colors.text }]}>
-                  {Math.round(uploadProgress.percentage)}%
-                </Text>
-                <Spinner size="small" color={colors.primary} />
-              </View>
-            </View>
-          )}
 
           {/* Camera icon overlay */}
           <View style={[styles.avatarOverlay, { backgroundColor: colors.primary }]}>
@@ -466,16 +414,12 @@ export default function ProfileScreen() {
           disabled={!hasChanges || isSaving}
           testID="save-button"
         >
-          {isSaving ? (
-            <Spinner size="small" color="#FFFFFF" />
-          ) : (
-            <Text style={[
-              styles.saveButtonText,
-              { color: hasChanges ? '#FFFFFF' : colors.textSecondary }
-            ]}>
-              Save
-            </Text>
-          )}
+          <Text style={[
+            styles.saveButtonText,
+            { color: hasChanges ? '#FFFFFF' : colors.textSecondary }
+          ]}>
+            {isSaving ? 'Saving...' : 'Save'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -491,10 +435,11 @@ export default function ProfileScreen() {
         {/* Form Section */}
         <View style={styles.formSection}>
           {generalError && (
-            <ErrorMessage 
-              message={generalError} 
-              onDismiss={() => setGeneralError(null)}
-            />
+            <View style={styles.errorContainer}>
+              <Text style={[styles.errorText, { color: colors.error }]}>
+                {generalError}
+              </Text>
+            </View>
           )}
 
           {/* Full Name */}
@@ -590,13 +535,16 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
-      {/* Toast */}
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onHide={hideToast}
-      />
+      {/* Simple Toast */}
+      {toast.visible && (
+        <View style={[styles.toast, 
+          { backgroundColor: toast.type === 'success' ? colors.success : colors.error }
+        ]}>
+          <Text style={styles.toastText}>
+            {toast.message}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -713,8 +661,28 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
   },
+  errorContainer: {
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    marginBottom: 16,
+  },
   errorText: {
     fontSize: 14,
     marginLeft: 4,
+  },
+  toast: {
+    position: 'absolute',
+    bottom: 100,
+    left: 20,
+    right: 20,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  toastText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

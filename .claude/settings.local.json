@@ -5,7 +5,8 @@
       "Bash(find:*)",
       "Bash(npx tsc:*)",
       "Bash(timeout 30s npm start:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npx eas-cli@latest:*)"
     ],
     "deny": []
   }

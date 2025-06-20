@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { TaskList } from '../../components/tasks/TaskList';
 import { Task } from '../../db/model/task';
@@ -18,6 +18,7 @@ export default function DashboardScreen() {
   const dispatch = useAppDispatch();
   const dailyStreak = useDailyStreak();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Check for midnight reset when component mounts
   useEffect(() => {
@@ -41,6 +42,13 @@ export default function DashboardScreen() {
 
     checkMidnightReset();
   }, [currentUser?.id, dispatch]);
+
+  // Refresh tasks when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      setRefreshTrigger(prev => prev + 1);
+    }, [])
+  );
 
   const handleTaskPress = useCallback((task: Task) => {
     router.push(`/tasks/${task.id}/edit`);
@@ -68,9 +76,6 @@ export default function DashboardScreen() {
     }
   }, []);
 
-  const handleSettingsPress = useCallback(() => {
-    router.push('/settings/profile');
-  }, [router]);
 
   const getCurrentGreeting = () => {
     const hour = new Date().getHours();
@@ -117,44 +122,39 @@ export default function DashboardScreen() {
       style={containerStyle}
       edges={['top', 'left', 'right']}
     >
-      {/* Header */}
+      {/* Dashboard Title */}
+      <View style={[styles.dashboardHeader, isDarkMode && styles.darkDashboardHeader]}>
+        <Text style={[styles.dashboardTitle, isDarkMode && styles.darkDashboardTitle]}>
+          Dashboard
+        </Text>
+      </View>
+
+      {/* Streak Banner */}
+      <View style={[styles.streakBanner, isDarkMode && styles.darkStreakBanner]}>
+        <View style={styles.streakBannerContent}>
+          <View style={styles.streakInfo}>
+            <Ionicons name="flame" size={20} color="#FF6B35" />
+            <Text style={[styles.streakBannerText, isDarkMode && styles.darkStreakBannerText]}>
+              {dailyStreak > 0 ? `${dailyStreak} day streak!` : 'Start your streak today!'}
+            </Text>
+          </View>
+          <Text style={[styles.streakSubtext, isDarkMode && styles.darkStreakSubtext]}>
+            {dailyStreak > 0 ? 'Keep up the great work!' : 'Complete a task to start'}
+          </Text>
+        </View>
+      </View>
+
+      {/* Greeting Header */}
       <View style={headerStyle}>
         <View style={styles.headerContent}>
           <View style={styles.headerText}>
             <Text style={greetingStyle}>
               {getCurrentGreeting()}{currentUser?.user_metadata?.full_name ? `, ${currentUser.user_metadata.full_name}` : ''}
             </Text>
-            <View style={styles.dateRow}>
-              <Text style={dateStyle}>
-                {getTodayDate()}
-              </Text>
-              {dailyStreak > 0 && (
-                <View style={[styles.streakBadge, isDarkMode && styles.darkStreakBadge]}>
-                  <Ionicons
-                    name="flame"
-                    size={14}
-                    color="#FF6B35"
-                  />
-                  <Text style={[styles.streakText, isDarkMode && styles.darkStreakText]}>
-                    {dailyStreak}
-                  </Text>
-                </View>
-              )}
-            </View>
+            <Text style={dateStyle}>
+              {getTodayDate()}
+            </Text>
           </View>
-          
-          <TouchableOpacity
-            style={styles.settingsButton}
-            onPress={handleSettingsPress}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            testID="settings-button"
-          >
-            <Ionicons
-              name="settings-outline"
-              size={24}
-              color={isDarkMode ? '#FFFFFF' : '#1A1A1A'}
-            />
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -187,6 +187,7 @@ export default function DashboardScreen() {
           emptyStateTitle="No tasks for today"
           emptyStateDescription="Create your first habit to get started on your productive journey."
           emptyStateActionText="Create your first habit"
+          key={refreshTrigger} // Force re-render when refreshTrigger changes
         />
       </View>
     </SafeAreaView>
@@ -200,6 +201,61 @@ const styles = StyleSheet.create({
   },
   darkContainer: {
     backgroundColor: '#1A1A1A',
+  },
+  dashboardHeader: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  darkDashboardHeader: {
+    backgroundColor: '#2A2A2A',
+    borderBottomColor: '#404040',
+  },
+  dashboardTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1A1A1A',
+  },
+  darkDashboardTitle: {
+    color: '#FFFFFF',
+  },
+  streakBanner: {
+    backgroundColor: '#FFF5F0',
+    marginHorizontal: 16,
+    marginVertical: 12,
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF6B35',
+  },
+  darkStreakBanner: {
+    backgroundColor: '#2A2A2A',
+  },
+  streakBannerContent: {
+    gap: 4,
+  },
+  streakInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  streakBannerText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  },
+  darkStreakBannerText: {
+    color: '#FFFFFF',
+  },
+  streakSubtext: {
+    fontSize: 14,
+    color: '#666666',
+    marginLeft: 28,
+  },
+  darkStreakSubtext: {
+    color: '#CCCCCC',
   },
   header: {
     backgroundColor: '#FFFFFF',
@@ -256,11 +312,6 @@ const styles = StyleSheet.create({
   darkDate: {
     color: '#CCCCCC',
   },
-  settingsButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: 'transparent',
-  },
   taskSection: {
     flex: 1,
     paddingTop: 16,
@@ -284,25 +335,5 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     backgroundColor: 'transparent',
-  },
-  streakBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF5F0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  darkStreakBadge: {
-    backgroundColor: '#2A2A2A',
-  },
-  streakText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FF6B35',
-  },
-  darkStreakText: {
-    color: '#FF6B35',
   },
 });
