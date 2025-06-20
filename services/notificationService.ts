@@ -278,10 +278,11 @@ export class NotificationService {
    */
   async scheduleEveningStreakCheck(hour: number = 20): Promise<string | null> {
     try {
-      const trigger: Notifications.NotificationTriggerInput = {
-        seconds: 86400, // Daily (24 hours)
+      const trigger = {
+        type: 'timeInterval',
+        seconds: 86400,
         repeats: true,
-      };
+      } as any;
 
       return await Notifications.scheduleNotificationAsync({
         content: {
@@ -343,17 +344,19 @@ export class NotificationService {
       
       if (triggerType === 'daily') {
         trigger = {
+          type: 'calendar',
           hour: timing.hour,
           minute: timing.minute,
           repeats: true,
-        };
+        } as any;
       } else if (triggerType === 'weekly' && timing.dayOfWeek !== undefined) {
         trigger = {
+          type: 'calendar',
           weekday: timing.dayOfWeek + 1, // Expo uses 1-7, Sunday = 1
           hour: timing.hour,
           minute: timing.minute,
           repeats: true,
-        };
+        } as any;
       } else {
         // Custom time-based trigger
         const scheduleDate = new Date();
@@ -365,8 +368,9 @@ export class NotificationService {
         }
         
         trigger = {
+          type: 'date',
           date: scheduleDate,
-        };
+        } as any;
       }
 
       const title = customMessage || `Time to work on "${task.title}"`;

@@ -25,12 +25,12 @@ export const taskCompletionActions = {
   ): Promise<TaskCompletionActionResult> => {
     try {
       const isCompleting = task.status !== 'completed';
-      
+
       return await database.write(async () => {
         // Update the task
-        await task.update(record => {
+        await task.update((record: any) => {
           record.status = isCompleting ? 'completed' : 'todo';
-          record.completedAt = isCompleting ? new Date() : undefined;
+          record.completedAt = isCompleting ? new Date() : null;
           record.updatedAt = new Date();
           record.isDirty = true;
         });
@@ -41,7 +41,7 @@ export const taskCompletionActions = {
           // Create completion record
           completion = await database.collections
             .get<TaskCompletion>('task_completions')
-            .create(record => {
+            .create((record: any) => {
               record.taskId = task.id;
               record.completedBy = userId;
               record.completedAt = new Date();
@@ -58,7 +58,7 @@ export const taskCompletionActions = {
               Q.where('task_id', task.id)
             )
             .fetch();
-          
+
           if (existingCompletion.length > 0) {
             await existingCompletion[0].markAsDeleted();
           }
@@ -66,7 +66,8 @@ export const taskCompletionActions = {
 
         // Trigger personalization learning if task was completed
         if (isCompleting && completion) {
-          this.triggerPersonalizationLearning(task, userId, completion).catch(error => {
+          // Use taskCompletionActions instead of this to avoid 'this' context issues
+          taskCompletionActions.triggerPersonalizationLearning(task, userId, completion).catch((error: unknown) => {
             console.error('Error triggering personalization learning:', error);
           });
         }
@@ -77,7 +78,7 @@ export const taskCompletionActions = {
           completion,
         };
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling task completion:', error);
       return {
         success: false,
@@ -105,7 +106,7 @@ export const taskCompletionActions = {
 
       return await database.write(async () => {
         // Update the task
-        await task.update(record => {
+        await task.update((record: any) => {
           record.status = 'completed';
           record.completedAt = new Date();
           record.updatedAt = new Date();
@@ -115,7 +116,7 @@ export const taskCompletionActions = {
         // Create completion record
         const completion = await database.collections
           .get<TaskCompletion>('task_completions')
-          .create(record => {
+          .create((record: any) => {
             record.taskId = task.id;
             record.completedBy = userId;
             record.completedAt = new Date();
@@ -126,7 +127,7 @@ export const taskCompletionActions = {
           });
 
         // Trigger personalization learning
-        this.triggerPersonalizationLearning(task, userId, completion).catch(error => {
+        taskCompletionActions.triggerPersonalizationLearning(task, userId, completion).catch((error: unknown) => {
           console.error('Error triggering personalization learning:', error);
         });
 
@@ -136,7 +137,7 @@ export const taskCompletionActions = {
           completion,
         };
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error completing task:', error);
       return {
         success: false,
@@ -159,9 +160,9 @@ export const taskCompletionActions = {
 
       return await database.write(async () => {
         // Update the task
-        await task.update(record => {
+        await task.update((record: any) => {
           record.status = 'todo';
-          record.completedAt = undefined;
+          record.completedAt = null;
           record.updatedAt = new Date();
           record.isDirty = true;
         });
@@ -173,7 +174,7 @@ export const taskCompletionActions = {
             Q.where('task_id', task.id)
           )
           .fetch();
-        
+
         if (existingCompletion.length > 0) {
           await existingCompletion[0].markAsDeleted();
         }
@@ -183,7 +184,7 @@ export const taskCompletionActions = {
           task,
         };
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uncompleting task:', error);
       return {
         success: false,
@@ -203,7 +204,7 @@ export const taskCompletionActions = {
           Q.where('task_id', taskId)
         )
         .fetch();
-      
+
       return completions.length > 0 ? completions[0] : null;
     } catch (error) {
       console.error('Error fetching task completion:', error);
@@ -233,7 +234,7 @@ export const taskCompletionActions = {
 
       const completionsByType: Record<string, number> = {};
       completions.forEach((completion: TaskCompletion) => {
-        completionsByType[completion.completionType] = 
+        completionsByType[completion.completionType] =
           (completionsByType[completion.completionType] || 0) + 1;
       });
 
@@ -269,7 +270,7 @@ export const taskCompletionActions = {
 
       // Get user's personalization settings
       const settings = await notificationPersonalizer.getUserSettings(userId);
-      
+
       if (!settings.isSmartEnabled) {
         // Use standard notification scheduling
         return await notificationService.scheduleTaskReminder(task, originalTiming, {
@@ -300,12 +301,12 @@ export const taskCompletionActions = {
         {
           triggerType,
           isSmartEnabled: true,
-          customMessage: customMessage || this.generateSmartNotificationMessage(task, optimization),
+          customMessage: customMessage || taskCompletionActions.generateSmartNotificationMessage(task, optimization),
         }
       );
     } catch (error) {
       console.error('Error scheduling smart notification:', error);
-      
+
       // Fallback to standard notification
       return await notificationService.scheduleTaskReminder(task, originalTiming, options);
     }
@@ -320,12 +321,12 @@ export const taskCompletionActions = {
 
       // Get all scheduled notifications
       const scheduledNotifications = await notificationService.getScheduledReminders();
-      
+
       // Filter for smart-enabled task reminders
       const smartNotifications = scheduledNotifications.filter(
-        notification => 
-          notification.content.data?.type === 'task_reminder' &&
-          notification.content.data?.isSmartEnabled === true
+        (notification: any) =>
+          notification.content?.data?.type === 'task_reminder' &&
+          notification.content?.data?.isSmartEnabled === true
       );
 
       let updatedCount = 0;
@@ -333,7 +334,7 @@ export const taskCompletionActions = {
       // Update each smart notification
       for (const notification of smartNotifications) {
         try {
-          const taskId = notification.content.data?.taskId;
+          const taskId = notification.content?.data?.taskId as string | undefined;
           if (!taskId) continue;
 
           // Get the task
@@ -344,10 +345,15 @@ export const taskCompletionActions = {
           const trigger = notification.trigger;
           let originalTiming = { hour: 9, minute: 0 }; // Default
 
-          if (trigger && 'hour' in trigger && 'minute' in trigger) {
+          // Safely extract hour and minute from trigger if possible (CalendarTriggerInput)
+          if (
+            trigger &&
+            typeof (trigger as any).hour === 'number' &&
+            typeof (trigger as any).minute === 'number'
+          ) {
             originalTiming = {
-              hour: trigger.hour as number,
-              minute: trigger.minute as number,
+              hour: (trigger as any).hour,
+              minute: (trigger as any).minute,
             };
           }
 
@@ -359,18 +365,19 @@ export const taskCompletionActions = {
           );
 
           // Only update if there's significant confidence in the change
-          if (optimization.confidence > 0.3 && 
-              (optimization.optimizedTiming.hour !== originalTiming.hour ||
-               optimization.optimizedTiming.minute !== originalTiming.minute)) {
-            
+          if (
+            optimization.confidence > 0.3 &&
+            (optimization.optimizedTiming.hour !== originalTiming.hour ||
+              optimization.optimizedTiming.minute !== originalTiming.minute)
+          ) {
             await notificationService.updateTaskReminder(
               notification.identifier,
               task,
               optimization.optimizedTiming,
               {
-                triggerType: notification.content.data?.triggerType || 'daily',
+                triggerType: (notification.content?.data?.triggerType as 'daily' | 'weekly' | 'custom' | undefined) || 'daily',
                 isSmartEnabled: true,
-                customMessage: this.generateSmartNotificationMessage(task, optimization),
+                customMessage: taskCompletionActions.generateSmartNotificationMessage(task, optimization),
               }
             );
 
@@ -416,13 +423,15 @@ export const taskCompletionActions = {
     optimization: { confidence: number; reason: string; effectivenessScore: number }
   ): string => {
     const baseMessage = `Time to work on "${task.title}"`;
-    
-    if (optimization.confidence > 0.7) {
-      return `${baseMessage} 📈 (Optimized timing)`;
-    } else if (optimization.confidence > 0.4) {
-      return `${baseMessage} 🎯 (Smart timing)`;
+
+    if (optimization && typeof optimization.confidence === 'number') {
+      if (optimization.confidence > 0.7) {
+        return `${baseMessage} 📈 (Optimized timing)`;
+      } else if (optimization.confidence > 0.4) {
+        return `${baseMessage} 🎯 (Smart timing)`;
+      }
     }
-    
+
     return baseMessage;
   },
 };

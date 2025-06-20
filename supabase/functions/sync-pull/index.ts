@@ -1,4 +1,6 @@
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -30,14 +32,17 @@ interface PullResponse {
   timestamp: number;
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    // @ts-ignore
     const supabaseClient = createClient(
+      // @ts-ignore
       Deno.env.get('SUPABASE_URL') ?? '',
+      // @ts-ignore
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
@@ -79,7 +84,7 @@ serve(async (req) => {
       .select('workspace_id')
       .eq('user_id', user.id)
     
-    const workspaceIds = userWorkspaces?.map(w => w.workspace_id) || []
+    const workspaceIds = userWorkspaces?.map((w: any) => w.workspace_id) || []
     
     for (const table of tables) {
       try {
@@ -103,7 +108,7 @@ serve(async (req) => {
               .select('id')
               .in('workspace_id', workspaceIds)
             
-            const projectIds = accessibleProjects?.map(p => p.id) || []
+            const projectIds = accessibleProjects?.map((p: any) => p.id) || []
             if (projectIds.length === 0) continue
             
             if (table === 'tasks') {
@@ -115,7 +120,7 @@ serve(async (req) => {
                 .select('id')
                 .in('project_id', projectIds)
               
-              const taskIds = accessibleTasks?.map(t => t.id) || []
+              const taskIds = accessibleTasks?.map((t: any) => t.id) || []
               if (taskIds.length === 0) continue
               
               query = query.in('task_id', taskIds)
@@ -130,7 +135,7 @@ serve(async (req) => {
                 .select('id')
                 .in('workspace_id', workspaceIds)
               
-              const tagIds = accessibleTags?.map(t => t.id) || []
+              const tagIds = accessibleTags?.map((t: any) => t.id) || []
               if (tagIds.length === 0) continue
               
               query = query.in('tag_id', tagIds)
@@ -154,7 +159,7 @@ serve(async (req) => {
         }
         
         if (data && data.length > 0) {
-          changes[table] = data.map(row => ({
+          changes[table] = data.map((row: any) => ({
             table,
             id: row.id,
             created: row.created_at > lastPulledDate.toISOString() ? row : undefined,
@@ -180,9 +185,12 @@ serve(async (req) => {
     
   } catch (error) {
     console.error('Sync pull error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   }
 })

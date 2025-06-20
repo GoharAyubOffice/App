@@ -19,8 +19,8 @@ export interface SmartNotificationHookResult {
   analyzeUserPatterns: () => Promise<void>;
   
   // Data
-  userProfile: any; // UserNotificationProfile
-  scheduledReminders: any[]; // Notifications
+  userProfile: any;
+  scheduledReminders: any[];
 }
 
 export const useSmartNotifications = (): SmartNotificationHookResult => {
@@ -29,8 +29,8 @@ export const useSmartNotifications = (): SmartNotificationHookResult => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasPermissions, setHasPermissions] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
-  const [scheduledReminders, setScheduledReminders] = useState([]);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [scheduledReminders, setScheduledReminders] = useState<any[]>([]);
 
   // Load initial data
   useEffect(() => {

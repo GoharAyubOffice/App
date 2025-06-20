@@ -1,4 +1,6 @@
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -23,14 +25,17 @@ interface PushResponse {
   experimentalRejectedIds?: string[];
 }
 
-serve(async (req) => {
+serve(async (req:Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    // @ts-ignore
     const supabaseClient = createClient(
+      // @ts-ignore
       Deno.env.get('SUPABASE_URL') ?? '',
+      // @ts-ignore
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
@@ -174,10 +179,13 @@ serve(async (req) => {
     
   } catch (error) {
     console.error('Sync push error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   }
 })
 
@@ -189,8 +197,8 @@ async function hasPermission(supabaseClient: any, userId: string, table: string,
       .select('workspace_id, role')
       .eq('user_id', userId)
     
-    const workspaceIds = userWorkspaces?.map(w => w.workspace_id) || []
-    const adminWorkspaceIds = userWorkspaces?.filter(w => ['owner', 'admin'].includes(w.role)).map(w => w.workspace_id) || []
+    const workspaceIds = userWorkspaces?.map((w: any) => w.workspace_id) || []
+    const adminWorkspaceIds = userWorkspaces?.filter((w: any) => ['owner', 'admin'].includes(w.role)).map((w: any) => w.workspace_id) || []
     
     switch (table) {
       case 'profiles':

@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { store } from '../store';
-import { setUser, setSession, setLoading, setError, clearAuth } from '../store/slices/authSlice';
+import { setAuth, setLoading, setError, signOut } from '../store/slices/authSlice';
 import { AuthError, Session, User } from '@supabase/supabase-js';
 
 export interface SignUpData {
@@ -54,30 +54,25 @@ export class AuthService {
       switch (event) {
         case 'SIGNED_IN':
           if (session?.user) {
-            dispatch(setUser(session.user));
-            dispatch(setSession(session));
+            dispatch(setAuth({ user: session.user, session }));
             await this.updateUserProfile(session.user);
           }
           break;
-          
         case 'SIGNED_OUT':
-          dispatch(clearAuth());
+          dispatch(signOut());
           break;
-          
         case 'TOKEN_REFRESHED':
           if (session) {
-            dispatch(setSession(session));
+            dispatch(setAuth({ user: session.user, session }));
           }
           break;
-          
         case 'USER_UPDATED':
           if (session?.user) {
-            dispatch(setUser(session.user));
+            dispatch(setAuth({ user: session.user, session }));
             await this.updateUserProfile(session.user);
           }
           break;
       }
-      
       dispatch(setLoading(false));
     });
   }
@@ -85,7 +80,7 @@ export class AuthService {
   async signUp(data: SignUpData): Promise<AuthResponse> {
     try {
       store.dispatch(setLoading(true));
-      store.dispatch(setError(null));
+      store.dispatch(setError(''));
 
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
@@ -108,7 +103,7 @@ export class AuthService {
         return {
           success: true,
           user: authData.user,
-          session: authData.session,
+          session: authData.session ?? undefined,
         };
       }
 
@@ -125,7 +120,7 @@ export class AuthService {
   async signIn(data: SignInData): Promise<AuthResponse> {
     try {
       store.dispatch(setLoading(true));
-      store.dispatch(setError(null));
+      store.dispatch(setError(''));
 
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
@@ -159,7 +154,7 @@ export class AuthService {
   async signOut(): Promise<AuthResponse> {
     try {
       store.dispatch(setLoading(true));
-      store.dispatch(setError(null));
+      store.dispatch(setError(''));
 
       const { error } = await supabase.auth.signOut();
 
@@ -169,6 +164,7 @@ export class AuthService {
         return { success: false, error: errorMessage };
       }
 
+      store.dispatch(signOut());
       return { success: true };
     } catch (error) {
       const errorMessage = 'Network error. Please check your connection.';
@@ -182,7 +178,7 @@ export class AuthService {
   async resetPassword(data: ResetPasswordData): Promise<AuthResponse> {
     try {
       store.dispatch(setLoading(true));
-      store.dispatch(setError(null));
+      store.dispatch(setError(''));
 
       const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
         redirectTo: 'flowstate://reset-password',
@@ -207,7 +203,7 @@ export class AuthService {
   async updatePassword(data: UpdatePasswordData): Promise<AuthResponse> {
     try {
       store.dispatch(setLoading(true));
-      store.dispatch(setError(null));
+      store.dispatch(setError(''));
 
       const { data: userData, error } = await supabase.auth.updateUser({
         password: data.password,
@@ -239,7 +235,7 @@ export class AuthService {
   async signInWithGoogle(): Promise<AuthResponse> {
     try {
       store.dispatch(setLoading(true));
-      store.dispatch(setError(null));
+      store.dispatch(setError(''));
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -267,7 +263,7 @@ export class AuthService {
   async signInWithApple(): Promise<AuthResponse> {
     try {
       store.dispatch(setLoading(true));
-      store.dispatch(setError(null));
+      store.dispatch(setError(''));
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
@@ -311,7 +307,7 @@ export class AuthService {
         .single();
 
       if (profile) {
-        store.dispatch(setUser({ ...user, profile }));
+        store.dispatch(setAuth({ user, session: null }));
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);

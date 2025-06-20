@@ -1,7 +1,8 @@
 import { synchronize } from '@nozbe/watermelondb/sync';
 import { database } from '../db';
 import { store } from '../store';
-import { syncApi, PullChangesRequest, PushChangesRequest } from '../store/api/syncApi';
+import { syncApi, PullChangesRequest, PushChangesRequest, PushChange } from '../store/api/syncApi';
+import { SyncDatabaseChangeSet } from '@nozbe/watermelondb/sync';
 
 export interface SyncOptions {
   pullFilter?: {
@@ -37,7 +38,7 @@ export class SyncService {
         pullChanges: this.pullChanges.bind(this),
         pushChanges: this.pushChanges.bind(this),
         sendCreatedAsUpdated: true,
-        log: __DEV__ ? console.log : undefined,
+        log: (__DEV__ ? console.log : undefined) as any,
         conflictResolver: this.resolveConflict.bind(this),
         migrationsEnabledAtVersion: 1,
       });
@@ -91,24 +92,27 @@ export class SyncService {
     }
   }
 
-  private async pushChanges(args: { changes: any[]; lastPulledAt: number }) {
+  private async pushChanges(args: { changes: SyncDatabaseChangeSet; lastPulledAt: number }) {
     const { changes, lastPulledAt } = args;
     
-    if (changes.length === 0) {
+    // Flatten all table changes into a single array if needed for your API
+    const allChanges = Object.values(changes).flat() as PushChange[];
+
+    if (allChanges.length === 0) {
       return { experimentalRejectedIds: [] };
     }
 
-    this.syncOptions.onProgress?.({ 
-      phase: 'push', 
-      completed: 0, 
-      total: changes.length 
+    this.syncOptions.onProgress?.({
+      phase: 'push',
+      completed: 0,
+      total: allChanges.length,
     });
 
     // Filter changes if needed
-    let filteredChanges = changes;
+    let filteredChanges = allChanges;
     if (this.syncOptions.pushFilter?.table) {
-      filteredChanges = changes.filter(change => 
-        change.table === this.syncOptions.pushFilter?.table
+      filteredChanges = allChanges.filter(change =>
+        (change as PushChange).table === this.syncOptions.pushFilter?.table
       );
     }
 

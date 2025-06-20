@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, DimensionValue } from 'react-native';
 import { useTheme } from '../../store/hooks';
 
 interface ProgressIndicatorProps {
@@ -56,7 +56,7 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
               styles.progressBar,
               { 
                 backgroundColor: colors.progress,
-                width: progressWidth,
+                width: progressWidth as DimensionValue,
               }
             ]}
           />
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   progressBar: {
     height: '100%',
     borderRadius: 3,
-    transition: 'width 0.3s ease',
+    // Removed 'transition' property as it's not supported in React Native styles
   },
   dotsContainer: {
     flexDirection: 'row',

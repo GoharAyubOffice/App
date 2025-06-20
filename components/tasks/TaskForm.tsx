@@ -12,7 +12,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '../../store/hooks';
-import { TaskData, TaskStatus, TaskPriority } from '../../db/actions/taskActions';
+import { TaskData } from '../../db/actions/taskActions';
+import { TaskStatus, TaskPriority } from '../../db/model/task';
 import { Project } from '../../db/model/project';
 import { Spinner } from '../ui/Spinner';
 import { ErrorMessage } from '../ui/ErrorMessage';
@@ -176,7 +177,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
         status: formData.status,
         priority: formData.priority,
         projectId: formData.projectId,
-        dueDate: formData.dueDate,
+        dueDate: formData.dueDate ?? undefined,
         createdBy: '', // This should be set by the calling component
       };
 

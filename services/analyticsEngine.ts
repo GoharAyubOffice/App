@@ -122,38 +122,40 @@ export class AnalyticsEngine {
         this.getTimeEntriesInRange(userId, startDate, endDate),
       ]);
 
-      const tasks = tasksData.success ? tasksData.data : [];
-      const completions = completionsData.success ? completionsData.data : [];
-      const dailyActivities = dailyActivitiesData.success ? dailyActivitiesData.data : [];
-      const moodEntries = moodData.success ? moodData.data : [];
-      const streaks = streakData.success ? streakData.data : [];
-      const timeEntries = timeData.success ? timeData.data : [];
+      const tasks: any[] = tasksData && tasksData.success && tasksData.data ? tasksData.data : [];
+      const completions: any[] = completionsData && completionsData.success && completionsData.data ? completionsData.data : [];
+      const dailyActivities: any[] = dailyActivitiesData && dailyActivitiesData.success && dailyActivitiesData.data ? dailyActivitiesData.data : [];
+      const moodEntries: Array<{ moodScore: number }> = moodData && moodData.success && moodData.data ? moodData.data : [];
+      const streaks: Array<{ longestCount: number }> = streakData && streakData.success && streakData.data ? streakData.data : [];
+      const timeEntries: Array<{ duration?: number }> = timeData && timeData.success && timeData.data ? timeData.data : [];
 
       // Calculate summary metrics
       const totalTasks = tasks.length;
-      const completedTasks = tasks.filter(task => task.status === 'completed').length;
+      const completedTasks = tasks.filter((task: any) => task.status === 'completed').length;
       const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-      
-      const averageMood = moodEntries.length > 0 
-        ? moodEntries.reduce((sum, entry) => sum + entry.moodScore, 0) / moodEntries.length
+
+      const averageMood = moodEntries.length > 0
+        ? moodEntries.reduce((sum: number, entry: { moodScore: number }) => sum + entry.moodScore, 0) / moodEntries.length
         : 0;
 
-      const longestStreak = streaks.length > 0 
-        ? Math.max(...streaks.map(streak => streak.longestCount))
+      const longestStreak = streaks && streaks.length > 0
+        ? Math.max(...streaks.map((streak: { longestCount: number }) => streak.longestCount))
         : 0;
 
-      const totalActiveTime = timeEntries.reduce((sum, entry) => sum + (entry.duration || 0), 0);
+      const totalActiveTime = timeEntries && timeEntries.length > 0
+        ? timeEntries.reduce((sum: number, entry: { duration?: number }) => sum + (entry.duration || 0), 0)
+        : 0;
 
       // Check data sufficiency
       const dataQuality = {
         tasksDataSufficient: tasks.length >= MINIMUM_DATA_REQUIREMENTS.TASKS,
         moodDataSufficient: moodEntries.length >= MINIMUM_DATA_REQUIREMENTS.MOOD_ENTRIES,
-        streakDataSufficient: streaks.length > 0,
-        timeDataSufficient: timeEntries.length >= MINIMUM_DATA_REQUIREMENTS.TIME_ENTRIES,
+        streakDataSufficient: streaks && streaks.length > 0,
+        timeDataSufficient: timeEntries && timeEntries.length >= MINIMUM_DATA_REQUIREMENTS.TIME_ENTRIES,
       };
 
-      const hasMinimumData = dataQuality.tasksDataSufficient && 
-                            dailyActivities.length >= MINIMUM_DATA_REQUIREMENTS.DAILY_ACTIVITIES;
+      const hasMinimumData = dataQuality.tasksDataSufficient &&
+        dailyActivities && dailyActivities.length >= MINIMUM_DATA_REQUIREMENTS.DAILY_ACTIVITIES;
 
       return {
         success: true,
@@ -370,7 +372,7 @@ export class AnalyticsEngine {
         date: string;
       }> = [];
 
-      moodEntries.forEach(moodEntry => {
+      moodEntries.forEach((moodEntry: any) => {
         const moodDate = moodEntry.loggedAt.toISOString().split('T')[0];
         const matchingActivity = dailyActivities.find(activity => 
           activity.activityDate.toISOString().split('T')[0] === moodDate

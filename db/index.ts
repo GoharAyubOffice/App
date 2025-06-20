@@ -24,11 +24,14 @@ import { MoodEntry } from './model/moodEntry';
 const adapter = new SQLiteAdapter({
   schema,
   dbName: 'FlowStateApp',
-  migrationEvents: true,
-  onSetUpError: (error) => {
+  migrationEvents: {
+    onSuccess() {},
+    onStart() {},
+    onError() {},
+  },
+  onSetUpError: (error: any) => {
     console.error('Database setup error:', error);
   },
-  experimentalUseJSI: Platform.OS === 'ios',
 });
 
 export const database = new Database({

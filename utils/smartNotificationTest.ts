@@ -169,7 +169,7 @@ export function testNotificationMessages(): boolean {
       id: 'test-task-789',
       title: 'Important Meeting Prep',
       priority: 'urgent' as const,
-    };
+    } as any;
 
     const mockOptimization = {
       confidence: 0.8,

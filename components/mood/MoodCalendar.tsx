@@ -277,9 +277,9 @@ export const MoodCalendar: React.FC<MoodCalendarProps> = ({
     textDayFontFamily: 'System',
     textMonthFontFamily: 'System',
     textDayHeaderFontFamily: 'System',
-    textDayFontWeight: '300',
-    textMonthFontWeight: '600',
-    textDayHeaderFontWeight: '600',
+    textDayFontWeight: "300",
+    textMonthFontWeight: "600",
+    textDayHeaderFontWeight: "600",
     textDayFontSize: 16,
     textMonthFontSize: 18,
     textDayHeaderFontSize: 13,
@@ -306,7 +306,12 @@ export const MoodCalendar: React.FC<MoodCalendarProps> = ({
           onMonthChange={handleMonthChange}
           markedDates={markedDates}
           markingType="custom"
-          theme={calendarTheme}
+          theme={{
+            ...calendarTheme,
+            textDayFontWeight: 300 as const,
+            textMonthFontWeight: 600 as const,
+            textDayHeaderFontWeight: 600 as const,
+          }}
           style={styles.calendar}
           hideExtraDays={true}
           firstDay={1} // Monday

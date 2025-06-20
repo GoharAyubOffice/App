@@ -35,7 +35,8 @@ interface BackgroundTaskData {
 export class BackgroundService {
   private static instance: BackgroundService;
   private appStateChangeListener?: ((nextAppState: AppStateStatus) => void);
-  private midnightCheckInterval?: NodeJS.Timeout;
+  private midnightCheckInterval?: number;
+  private appStateSubscription?: { remove: () => void };
 
   static getInstance(): BackgroundService {
     if (!BackgroundService.instance) {
@@ -83,9 +84,9 @@ export class BackgroundService {
       }
 
       // Request background fetch permissions
-      const backgroundStatus = await BackgroundFetch.requestPermissionsAsync();
-      if (backgroundStatus.status !== BackgroundFetch.BackgroundFetchStatus.Available) {
-        console.warn('Background fetch not available:', backgroundStatus.status);
+      const status = await BackgroundFetch.getStatusAsync();
+      if (status !== BackgroundFetch.BackgroundFetchStatus.Available) {
+        console.warn('Background fetch not available:', status);
       }
     } catch (error) {
       console.error('Error requesting permissions:', error);
@@ -176,7 +177,8 @@ export class BackgroundService {
       }
     };
 
-    AppState.addEventListener('change', this.appStateChangeListener);
+    // Store the subscription
+    this.appStateSubscription = AppState.addEventListener('change', this.appStateChangeListener);
 
     // Set up periodic check while app is active
     this.midnightCheckInterval = setInterval(() => {
@@ -321,9 +323,9 @@ export class BackgroundService {
       }
 
       // Remove app state listener
-      if (this.appStateChangeListener) {
-        AppState.removeEventListener('change', this.appStateChangeListener);
-        this.appStateChangeListener = undefined;
+      if (this.appStateSubscription) {
+        this.appStateSubscription.remove();
+        this.appStateSubscription = undefined;
       }
 
       // Clear intervals
@@ -352,7 +354,7 @@ export class BackgroundService {
       return {
         isRegistered: isBackgroundTasksRegistered,
         lastExecution: lastResetDate ? new Date(lastResetDate) : undefined,
-        status,
+        status: status ?? undefined,
       };
     } catch (error) {
       console.error('Error getting background task status:', error);

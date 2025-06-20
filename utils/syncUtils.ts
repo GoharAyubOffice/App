@@ -32,16 +32,16 @@ export class SyncUtils {
   }
 
   static createSyncQuery(tableName: string, lastSyncTime?: number) {
-    const queries = [Q.where('is_dirty', true)];
-    
     if (lastSyncTime) {
-      queries.push(Q.or(
-        Q.where('synced_at', Q.gt(lastSyncTime)),
-        Q.where('synced_at', null)
-      ));
+      return [
+        Q.or(
+          Q.where('is_dirty', true),
+          Q.where('synced_at', Q.gt(lastSyncTime)),
+          Q.where('synced_at', null)
+        )
+      ];
     }
-    
-    return queries;
+    return [Q.where('is_dirty', true)];
   }
 
   static handleSyncError(error: any): SyncError {

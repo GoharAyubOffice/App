@@ -18,7 +18,7 @@ export const MidnightResetNotification: React.FC = () => {
   const showNotification = useShowNewDayNotification();
   const dispatch = useAppDispatch();
   const insets = useSafeAreaInsets();
-  const hideTimeoutRef = useRef<NodeJS.Timeout>();
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Animation values
   const translateY = useSharedValue(-100);
@@ -45,7 +45,7 @@ export const MidnightResetNotification: React.FC = () => {
     // Auto-hide after 4 seconds
     hideTimeoutRef.current = setTimeout(() => {
       runOnJS(hideNotification)();
-    }, 4000);
+    }, 4000) as unknown as NodeJS.Timeout;
   };
 
   // Hide animation
