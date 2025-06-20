@@ -2,6 +2,8 @@ import { Q } from '@nozbe/watermelondb';
 import { database } from '../index';
 import { Task } from '../model/task';
 import { TaskCompletion } from '../model/taskCompletion';
+import { notificationPersonalizer } from '../../services/notificationPersonalizer';
+import { notificationService } from '../../services/notificationService';
 
 export interface TaskCompletionActionResult {
   success: boolean;
@@ -62,6 +64,13 @@ export const taskCompletionActions = {
           }
         }
 
+        // Trigger personalization learning if task was completed
+        if (isCompleting && completion) {
+          this.triggerPersonalizationLearning(task, userId, completion).catch(error => {
+            console.error('Error triggering personalization learning:', error);
+          });
+        }
+
         return {
           success: true,
           task,
@@ -115,6 +124,11 @@ export const taskCompletionActions = {
             record.createdAt = new Date();
             record.isDirty = true;
           });
+
+        // Trigger personalization learning
+        this.triggerPersonalizationLearning(task, userId, completion).catch(error => {
+          console.error('Error triggering personalization learning:', error);
+        });
 
         return {
           success: true,
@@ -236,5 +250,179 @@ export const taskCompletionActions = {
         averagePerDay: 0,
       };
     }
+  },
+
+  /**
+   * Schedule smart notification for a task
+   */
+  scheduleSmartNotification: async (
+    task: Task,
+    userId: string,
+    originalTiming: { hour: number; minute: number },
+    options: {
+      triggerType?: 'daily' | 'weekly' | 'custom';
+      customMessage?: string;
+    } = {}
+  ): Promise<string | null> => {
+    try {
+      const { triggerType = 'daily', customMessage } = options;
+
+      // Get user's personalization settings
+      const settings = await notificationPersonalizer.getUserSettings(userId);
+      
+      if (!settings.isSmartEnabled) {
+        // Use standard notification scheduling
+        return await notificationService.scheduleTaskReminder(task, originalTiming, {
+          triggerType,
+          isSmartEnabled: false,
+          customMessage,
+        });
+      }
+
+      // Get optimized timing
+      const optimization = await notificationPersonalizer.getOptimizedTiming(
+        userId,
+        task,
+        originalTiming
+      );
+
+      console.log(`[TaskCompletion] Smart notification scheduled for "${task.title}":`, {
+        original: `${originalTiming.hour}:${originalTiming.minute}`,
+        optimized: `${optimization.optimizedTiming.hour}:${optimization.optimizedTiming.minute}`,
+        confidence: optimization.confidence,
+        reason: optimization.reason,
+      });
+
+      // Schedule with optimized timing
+      return await notificationService.scheduleTaskReminder(
+        task,
+        optimization.optimizedTiming,
+        {
+          triggerType,
+          isSmartEnabled: true,
+          customMessage: customMessage || this.generateSmartNotificationMessage(task, optimization),
+        }
+      );
+    } catch (error) {
+      console.error('Error scheduling smart notification:', error);
+      
+      // Fallback to standard notification
+      return await notificationService.scheduleTaskReminder(task, originalTiming, options);
+    }
+  },
+
+  /**
+   * Update notification timing based on user patterns
+   */
+  updateSmartNotifications: async (userId: string): Promise<void> => {
+    try {
+      console.log(`[TaskCompletion] Updating smart notifications for user: ${userId}`);
+
+      // Get all scheduled notifications
+      const scheduledNotifications = await notificationService.getScheduledReminders();
+      
+      // Filter for smart-enabled task reminders
+      const smartNotifications = scheduledNotifications.filter(
+        notification => 
+          notification.content.data?.type === 'task_reminder' &&
+          notification.content.data?.isSmartEnabled === true
+      );
+
+      let updatedCount = 0;
+
+      // Update each smart notification
+      for (const notification of smartNotifications) {
+        try {
+          const taskId = notification.content.data?.taskId;
+          if (!taskId) continue;
+
+          // Get the task
+          const task = await database.collections.get<Task>('tasks').find(taskId);
+          if (!task) continue;
+
+          // Get original timing from notification trigger
+          const trigger = notification.trigger;
+          let originalTiming = { hour: 9, minute: 0 }; // Default
+
+          if (trigger && 'hour' in trigger && 'minute' in trigger) {
+            originalTiming = {
+              hour: trigger.hour as number,
+              minute: trigger.minute as number,
+            };
+          }
+
+          // Get new optimized timing
+          const optimization = await notificationPersonalizer.getOptimizedTiming(
+            userId,
+            task,
+            originalTiming
+          );
+
+          // Only update if there's significant confidence in the change
+          if (optimization.confidence > 0.3 && 
+              (optimization.optimizedTiming.hour !== originalTiming.hour ||
+               optimization.optimizedTiming.minute !== originalTiming.minute)) {
+            
+            await notificationService.updateTaskReminder(
+              notification.identifier,
+              task,
+              optimization.optimizedTiming,
+              {
+                triggerType: notification.content.data?.triggerType || 'daily',
+                isSmartEnabled: true,
+                customMessage: this.generateSmartNotificationMessage(task, optimization),
+              }
+            );
+
+            updatedCount++;
+          }
+        } catch (error) {
+          console.error('Error updating individual notification:', error);
+        }
+      }
+
+      console.log(`[TaskCompletion] Updated ${updatedCount} smart notifications`);
+    } catch (error) {
+      console.error('Error updating smart notifications:', error);
+    }
+  },
+
+  /**
+   * Trigger personalization learning after task completion
+   */
+  triggerPersonalizationLearning: async (
+    task: Task,
+    userId: string,
+    completion: TaskCompletion
+  ): Promise<void> => {
+    try {
+      // Re-analyze user patterns with new completion data
+      await notificationPersonalizer.analyzeUserPatterns(userId);
+
+      // Update smart notifications based on new patterns
+      await taskCompletionActions.updateSmartNotifications(userId);
+
+      console.log(`[TaskCompletion] Triggered personalization learning for user ${userId}`);
+    } catch (error) {
+      console.error('Error in personalization learning:', error);
+    }
+  },
+
+  /**
+   * Generate smart notification message with personalization info
+   */
+  generateSmartNotificationMessage: (
+    task: Task,
+    optimization: { confidence: number; reason: string; effectivenessScore: number }
+  ): string => {
+    const baseMessage = `Time to work on "${task.title}"`;
+    
+    if (optimization.confidence > 0.7) {
+      return `${baseMessage} 📈 (Optimized timing)`;
+    } else if (optimization.confidence > 0.4) {
+      return `${baseMessage} 🎯 (Smart timing)`;
+    }
+    
+    return baseMessage;
   },
 };

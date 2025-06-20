@@ -23,6 +23,25 @@ export interface NotificationOptions {
   priority?: Notifications.AndroidNotificationPriority;
 }
 
+export interface ReminderSchedule {
+  id: string;
+  taskId: string;
+  userId: string;
+  title: string;
+  body: string;
+  scheduledTime: Date;
+  triggerType: 'daily' | 'weekly' | 'custom';
+  isActive: boolean;
+  isSmartEnabled: boolean;
+  data?: Record<string, any>;
+}
+
+export interface NotificationTiming {
+  hour: number;
+  minute: number;
+  dayOfWeek?: number; // 0-6, Sunday = 0
+}
+
 export class NotificationService {
   private static instance: NotificationService;
 
@@ -260,7 +279,6 @@ export class NotificationService {
   async scheduleEveningStreakCheck(hour: number = 20): Promise<string | null> {
     try {
       const trigger: Notifications.NotificationTriggerInput = {
-        type: 'timeInterval',
         seconds: 86400, // Daily (24 hours)
         repeats: true,
       };
@@ -303,6 +321,189 @@ export class NotificationService {
     } catch (error) {
       console.error('Error canceling notification:', error);
     }
+  }
+
+  /**
+   * Schedule a task reminder notification
+   */
+  async scheduleTaskReminder(
+    task: Task,
+    timing: NotificationTiming,
+    options: {
+      triggerType?: 'daily' | 'weekly' | 'custom';
+      isSmartEnabled?: boolean;
+      customMessage?: string;
+    } = {}
+  ): Promise<string | null> {
+    try {
+      const { triggerType = 'daily', isSmartEnabled = true, customMessage } = options;
+      
+      // Create trigger based on timing and type
+      let trigger: Notifications.NotificationTriggerInput;
+      
+      if (triggerType === 'daily') {
+        trigger = {
+          hour: timing.hour,
+          minute: timing.minute,
+          repeats: true,
+        };
+      } else if (triggerType === 'weekly' && timing.dayOfWeek !== undefined) {
+        trigger = {
+          weekday: timing.dayOfWeek + 1, // Expo uses 1-7, Sunday = 1
+          hour: timing.hour,
+          minute: timing.minute,
+          repeats: true,
+        };
+      } else {
+        // Custom time-based trigger
+        const scheduleDate = new Date();
+        scheduleDate.setHours(timing.hour, timing.minute, 0, 0);
+        
+        // If time has passed today, schedule for tomorrow
+        if (scheduleDate <= new Date()) {
+          scheduleDate.setDate(scheduleDate.getDate() + 1);
+        }
+        
+        trigger = {
+          date: scheduleDate,
+        };
+      }
+
+      const title = customMessage || `Time to work on "${task.title}"`;
+      const body = this.generateReminderBody(task, isSmartEnabled);
+
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          data: {
+            type: 'task_reminder',
+            taskId: task.id,
+            triggerType,
+            isSmartEnabled,
+            scheduledAt: new Date().toISOString(),
+          },
+          categoryIdentifier: 'task_reminder',
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.DEFAULT,
+        },
+        trigger,
+      });
+
+      console.log(`Scheduled ${triggerType} reminder for task "${task.title}" at ${timing.hour}:${timing.minute}`);
+      return notificationId;
+    } catch (error) {
+      console.error('Error scheduling task reminder:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Update existing reminder with new timing
+   */
+  async updateTaskReminder(
+    notificationId: string,
+    task: Task,
+    newTiming: NotificationTiming,
+    options: {
+      triggerType?: 'daily' | 'weekly' | 'custom';
+      isSmartEnabled?: boolean;
+      customMessage?: string;
+    } = {}
+  ): Promise<string | null> {
+    try {
+      // Cancel existing notification
+      await this.cancelNotification(notificationId);
+      
+      // Schedule new one
+      return await this.scheduleTaskReminder(task, newTiming, options);
+    } catch (error) {
+      console.error('Error updating task reminder:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Schedule multiple reminders for a task
+   */
+  async scheduleMultipleReminders(
+    task: Task,
+    timings: Array<{ timing: NotificationTiming; triggerType?: 'daily' | 'weekly' | 'custom' }>,
+    options: {
+      isSmartEnabled?: boolean;
+      customMessage?: string;
+    } = {}
+  ): Promise<string[]> {
+    try {
+      const notificationIds: string[] = [];
+      
+      for (const { timing, triggerType = 'daily' } of timings) {
+        const id = await this.scheduleTaskReminder(task, timing, {
+          triggerType,
+          ...options,
+        });
+        if (id) {
+          notificationIds.push(id);
+        }
+      }
+      
+      return notificationIds;
+    } catch (error) {
+      console.error('Error scheduling multiple reminders:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all scheduled notifications
+   */
+  async getScheduledReminders(): Promise<Notifications.NotificationRequest[]> {
+    try {
+      return await Notifications.getAllScheduledNotificationsAsync();
+    } catch (error) {
+      console.error('Error fetching scheduled notifications:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Cancel all reminders for a specific task
+   */
+  async cancelTaskReminders(taskId: string): Promise<void> {
+    try {
+      const scheduledNotifications = await this.getScheduledReminders();
+      
+      for (const notification of scheduledNotifications) {
+        if (notification.content.data?.taskId === taskId) {
+          await this.cancelNotification(notification.identifier);
+        }
+      }
+      
+      console.log(`Canceled all reminders for task: ${taskId}`);
+    } catch (error) {
+      console.error('Error canceling task reminders:', error);
+    }
+  }
+
+  /**
+   * Generate contextual reminder body text
+   */
+  private generateReminderBody(task: Task, isSmartEnabled: boolean): string {
+    const baseMessages = [
+      `Don't forget about "${task.title}"`,
+      `Time to tackle "${task.title}"`,
+      `Ready to work on "${task.title}"?`,
+      `Let's get "${task.title}" done!`,
+    ];
+
+    if (task.priority === 'urgent') {
+      return `🚨 Urgent: ${baseMessages[Math.floor(Math.random() * baseMessages.length)]}`;
+    } else if (task.priority === 'high') {
+      return `⚡ ${baseMessages[Math.floor(Math.random() * baseMessages.length)]}`;
+    }
+
+    const smartSuffix = isSmartEnabled ? ' (Smart timing enabled)' : '';
+    return baseMessages[Math.floor(Math.random() * baseMessages.length)] + smartSuffix;
   }
 
   /**
