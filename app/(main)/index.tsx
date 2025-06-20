@@ -122,7 +122,7 @@ export default function DashboardScreen() {
         <View style={styles.headerContent}>
           <View style={styles.headerText}>
             <Text style={greetingStyle}>
-              {getCurrentGreeting()}{currentUser?.full_name ? `, ${currentUser.full_name}` : ''}
+              {getCurrentGreeting()}{currentUser?.user_metadata?.full_name ? `, ${currentUser.user_metadata.full_name}` : ''}
             </Text>
             <View style={styles.dateRow}>
               <Text style={dateStyle}>

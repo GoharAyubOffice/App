@@ -55,7 +55,7 @@ export default function SignUpScreen() {
   }, [fullName, username, email, password, confirmPassword, fullNameError, usernameError, emailError, passwordError, confirmPasswordError]);
 
   const validateForm = () => {
-    const allFieldsFilled = fullName && username && email && password && confirmPassword;
+    const allFieldsFilled = !!(fullName && username && email && password && confirmPassword);
     const noErrors = !fullNameError && !usernameError && !emailError && !passwordError && !confirmPasswordError;
     setIsFormValid(allFieldsFilled && noErrors);
   };

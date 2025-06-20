@@ -127,8 +127,18 @@ export default function AnalyticsScreen() {
         newData.productivityTrend = productivityTrendResult.value.data!;
       }
 
-      if (moodCorrelationResult.status === 'fulfilled' && moodCorrelationResult.value.success) {
-        newData.moodCorrelation = moodCorrelationResult.value.data!;
+      if (
+        moodCorrelationResult.status === 'fulfilled' &&
+        moodCorrelationResult.value.success &&
+        'data' in moodCorrelationResult.value &&
+        moodCorrelationResult.value.data &&
+        typeof moodCorrelationResult.value.data === 'object' &&
+        !Array.isArray(moodCorrelationResult.value.data) &&
+        'correlationData' in moodCorrelationResult.value.data &&
+        'correlationStrength' in moodCorrelationResult.value.data &&
+        'insights' in moodCorrelationResult.value.data
+      ) {
+        newData.moodCorrelation = moodCorrelationResult.value.data as MoodProductivityCorrelation;
       }
 
       if (taskDistributionResult.status === 'fulfilled' && taskDistributionResult.value.success) {

@@ -367,7 +367,7 @@ export default function OnboardingPreferencesScreen() {
             </View>
             <Switch
               value={preferences.notificationsEnabled}
-              onValueChange={(value) => dispatch(setNotificationsEnabled(value))}
+              onValueChange={(value) => { dispatch(setNotificationsEnabled(value)); }}
               trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor="#FFFFFF"
               testID="notifications-toggle"

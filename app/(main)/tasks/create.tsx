@@ -60,7 +60,7 @@ export default function CreateTaskScreen() {
           'You need to create a project before you can create tasks. Would you like to create a project now?',
           [
             { text: 'Cancel', style: 'cancel', onPress: () => router.back() },
-            { text: 'Create Project', onPress: () => router.push('/(main)/projects/create') },
+            { text: 'Create Project', onPress: () => router.push('/(main)/projects/create' as any) },
           ]
         );
       }
@@ -152,7 +152,7 @@ export default function CreateTaskScreen() {
         </Text>
         <TouchableOpacity
           style={[styles.createProjectButton, { backgroundColor: colors.primary }]}
-          onPress={() => router.push('/(main)/projects/create')}
+          onPress={() => router.push('/(main)/projects/create' as any)}
         >
           <Text style={styles.createProjectButtonText}>
             Create Project

@@ -360,13 +360,13 @@ export default function LibraryScreen() {
 
         <View style={styles.modalActions}>
           <TouchableOpacity
-            style={[styles.modalButton, styles.clearButton]}
+            style={[styles.modalButton, styles.modalClearButton]}
             onPress={() => {
               setSelectedCategory(null);
               setSelectedDifficulty(null);
             }}
           >
-            <Text style={styles.clearButtonText}>Clear Filters</Text>
+            <Text style={styles.applyButtonText}>Clear Filters</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.modalButton, styles.applyButton]}
@@ -896,15 +896,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
-  clearButton: {
+  modalClearButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: '#E9ECEF',
-  },
-  clearButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666666',
   },
   applyButton: {
     backgroundColor: '#007AFF',

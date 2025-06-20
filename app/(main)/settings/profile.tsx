@@ -19,7 +19,7 @@ import {
   useCurrentUser, 
   useAppDispatch 
 } from '../../../store/hooks';
-import { setUser } from '../../../store/slices/authSlice';
+import { setAuth, updateUserProfile } from '../../../store/slices/authSlice';
 import { UserProfileActions, UserProfileData } from '../../../db/actions/userProfileActions';
 import { UploadProgress } from '../../../services/storageService';
 import { Spinner } from '../../../components/ui/Spinner';
@@ -345,7 +345,13 @@ export default function ProfileScreen() {
         },
       };
       
-      dispatch(setUser(updatedUser));
+      dispatch(updateUserProfile({
+        user_metadata: {
+          full_name: formData.fullName,
+          username: formData.username,
+          avatar_url: newAvatarUrl,
+        }
+      }));
 
       showToast('Profile updated successfully!', 'success');
       setHasChanges(false);
